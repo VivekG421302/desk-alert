@@ -9,7 +9,7 @@ Password-protected dashboard that mirrors phone notifications in real time via S
 ## Setup
 1. Deploy the backend repo first and note its URL.
 2. Edit `config.js`: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `BACKEND_URL`.
-3. Run the SQL from the backend repo (`supabase.sql`) so the anon key can only SELECT (needed for Realtime).
+3. Run `supabase/schema.sql` from the backend repo so the anon key can only SELECT (needed for Realtime).
 4. Import this repo into Vercel (framework: Other, no build). Optionally set backend `ALLOWED_ORIGIN` to this site's URL.
 
 Local: `npx serve .`
