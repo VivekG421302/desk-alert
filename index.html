@@ -6,7 +6,7 @@
   <title>Desk Alert Bridge</title>
   <link id="favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f46e5'/%3E%3C/svg%3E" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
   <script src="config.js"></script>
   <style>
     @keyframes callFlash {
@@ -54,7 +54,7 @@
   const BASE_TITLE = 'Desk Alert Bridge';
   const $ = (id) => document.getElementById(id);
   let password = sessionStorage.getItem('da_pw') || '';
-  let sb = null, channel = null, unread = 0, audioCtx = null;
+  let sb = null, channel = null, unread = 0, audioCtx = null, live = false, pollTimer = null, loadedOnce = false;
   const seen = new Set();
 
   // ---------- API ----------
@@ -128,27 +128,39 @@
   // ---------- Realtime ----------
   function setStatus(txt, cls) { const s = $('status'); s.textContent = txt; s.className = 'text-xs px-2 py-1 rounded-full ' + cls; }
   function connect() {
+    loadHistory();                       // never depend on realtime for the first paint
+    clearInterval(pollTimer);
+    pollTimer = setInterval(() => { if (!live) loadHistory(); }, 5000);  // fallback while realtime is down
+    if (!cfg.SUPABASE_ANON_KEY || /YOUR_/.test(cfg.SUPABASE_ANON_KEY)) {
+      setStatus('Set SUPABASE_ANON_KEY in config.js (polling)', 'bg-amber-900 text-amber-300'); return;
+    }
     sb = sb || window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
     channel = sb.channel('desk-alert')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (p) => add(p.new, true))
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'notifications' }, () => resetList())
-      .subscribe((s) => {
-        if (s === 'SUBSCRIBED') { setStatus('● Live', 'bg-emerald-900 text-emerald-300'); loadHistory(); }
-        else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') setStatus('Reconnecting…', 'bg-amber-900 text-amber-300');
-        else if (s === 'CLOSED') setStatus('Offline', 'bg-slate-800 text-slate-400');
+      .subscribe((s, err) => {
+        live = (s === 'SUBSCRIBED');
+        if (live) { setStatus('● Live', 'bg-emerald-900 text-emerald-300'); loadHistory(); }
+        else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') {
+          console.error('Realtime', s, err);
+          setStatus('Realtime down, polling…', 'bg-amber-900 text-amber-300');
+        }
+        else if (s === 'CLOSED') setStatus('Offline, polling…', 'bg-slate-800 text-slate-400');
       });
   }
   async function loadHistory() {
     const r = await api('/api/history', 'GET', password);
     if (r.status === 401) return logout();
-    (r.data.items || []).slice().reverse().forEach((n) => add(n, false)); // oldest first so newest ends on top
+    const announce = loadedOnce;         // after the first load, unseen items are genuinely new
+    loadedOnce = true;
+    (r.data.items || []).slice().reverse().forEach((n) => add(n, announce)); // oldest first so newest ends on top
   }
   function resetList() { $('list').innerHTML = ''; seen.clear(); unread = 0; updateTitle(); syncEmpty(); }
 
   // ---------- Session ----------
   function showApp() { $('login').classList.add('hidden'); $('app').classList.remove('hidden'); connect(); }
   function logout() {
-    sessionStorage.removeItem('da_pw'); password = '';
+    sessionStorage.removeItem('da_pw'); password = ''; clearInterval(pollTimer); live = false; loadedOnce = false;
     if (channel && sb) sb.removeChannel(channel);
     channel = null; resetList();
     $('app').classList.add('hidden'); $('login').classList.remove('hidden');
