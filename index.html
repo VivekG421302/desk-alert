@@ -168,7 +168,7 @@
     } finally { btn.disabled = false; btn.textContent = 'Unlock'; }
   });
   $('logoutBtn').addEventListener('click', logout);
-  $('readBtn').addEventListener('click', markRead);
+  $('readBtn').addEventListener('click', () => { markRead(); api('/api/read', 'POST', password).catch(() => {}); });
   $('clearBtn').addEventListener('click', async () => {
     if (!confirm('Delete all alert history?')) return;
     const r = await api('/api/clear', 'DELETE', password);
