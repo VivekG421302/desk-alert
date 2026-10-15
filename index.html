@@ -100,6 +100,15 @@
     if (call) { const a = document.createElement('span'); a.textContent = n.app_name; top.append(a); }
     if (isNew) { const d = document.createElement('span'); d.className = 'new-dot w-2 h-2 rounded-full bg-emerald-400'; top.append(d); }
     top.append(time);
+    const del = document.createElement('button'); del.textContent = '✕'; del.title = 'Delete this alert'; del.setAttribute('aria-label', 'Delete');
+    del.className = 'ml-1 rounded-md px-2 py-0.5 text-base leading-none bg-black/30 hover:bg-black/60 text-white';
+    del.addEventListener('click', async () => {
+      del.disabled = true; li.style.opacity = '.4';
+      const r = await api('/api/notification?id=' + encodeURIComponent(n.id), 'DELETE', password).catch(() => ({ ok: false }));
+      if (r.ok) removeCard(n.id); else { del.disabled = false; li.style.opacity = ''; alert('Could not delete.'); }
+    });
+    top.append(del);
+    li.dataset.ts = String(new Date(n.created_at).getTime());
     const h = document.createElement('div'); h.className = 'mt-2 text-lg font-semibold break-words'; h.textContent = n.title;
     const m = document.createElement('div'); m.className = 'mt-1 text-sm opacity-90 whitespace-pre-wrap break-words'; m.textContent = n.message;
     li.append(top, h, m);
@@ -131,6 +140,11 @@
     btn.addEventListener('click', go);
     inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
     f.append(inp, btn, st); return f;
+  }
+  function removeCard(id) {
+    const el = $('list').querySelector('[data-id="' + id + '"]');
+    if (el) { if (el.dataset.new === '1' && unread > 0) { unread--; updateTitle(); } el.remove(); }
+    seen.delete(id); syncEmpty();
   }
   function syncEmpty() { $('empty').classList.toggle('hidden', $('list').children.length > 0); }
   function add(n, isNew) {
@@ -164,7 +178,9 @@
     sb = sb || window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
     channel = sb.channel('desk-alert')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (p) => add(p.new, true))
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'notifications' }, () => resetList())
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'notifications' }, (p) => {
+        if (p.old && p.old.id) removeCard(p.old.id); else loadHistory();
+      })
       .subscribe((s, err) => {
         live = (s === 'SUBSCRIBED');
         if (live) { setStatus('● Live', 'bg-emerald-900 text-emerald-300'); loadHistory(); }
@@ -178,9 +194,16 @@
   async function loadHistory() {
     const r = await api('/api/history', 'GET', password);
     if (r.status === 401) return logout();
+    const items = r.data.items || [];
+    if (loadedOnce && items.length < 100) {      // drop cards that were deleted elsewhere (ignore very recent ones)
+      const ids = new Set(items.map((x) => x.id));
+      $('list').querySelectorAll('[data-id]').forEach((el) => {
+        if (!ids.has(el.dataset.id) && Date.now() - Number(el.dataset.ts || 0) > 20000) removeCard(el.dataset.id);
+      });
+    }
     const announce = loadedOnce;         // after the first load, unseen items are genuinely new
     loadedOnce = true;
-    (r.data.items || []).slice().reverse().forEach((n) => add(n, announce)); // oldest first so newest ends on top
+    items.slice().reverse().forEach((n) => add(n, announce)); // oldest first so newest ends on top
   }
   function resetList() { $('list').innerHTML = ''; seen.clear(); unread = 0; updateTitle(); syncEmpty(); }
 
