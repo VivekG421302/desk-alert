@@ -224,31 +224,56 @@
 
   // ---------- Realtime ----------
   function setStatus(txt, cls) { const s = $('status'); s.textContent = txt; s.className = 'text-xs px-2 py-1 rounded-full ' + cls; }
-  function connect() {
-    loadHistory();                       // never depend on realtime for the first paint
-    clearInterval(pollTimer);
-    pollTimer = setInterval(loadHistory, 4000);  // safety net: also catches anything realtime misses (deduped by id)
-    if (!cfg.SUPABASE_ANON_KEY || /YOUR_/.test(cfg.SUPABASE_ANON_KEY)) {
-      setStatus('Set SUPABASE_ANON_KEY in config.js (polling)', 'bg-amber-900 text-amber-300'); return;
-    }
-    sb = sb || window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
-    channel = sb.channel('desk-alert')
+  // Ticker runs in a Web Worker: browsers heavily throttle timers in background tabs, workers are not throttled
+  let tickWorker = null, lastPoll = 0, retryTimer = null, retryDelay = 3000, loading = false;
+  function stopTicker() { if (tickWorker) { tickWorker.terminate(); tickWorker = null; } clearInterval(pollTimer); }
+  function startTicker() {
+    stopTicker();
+    try {
+      const url = URL.createObjectURL(new Blob(['setInterval(function(){postMessage(1)},1000)'], { type: 'text/javascript' }));
+      tickWorker = new Worker(url); tickWorker.onmessage = tick;
+    } catch { pollTimer = setInterval(tick, 1000); }
+  }
+  function tick() {                      // poll every 2.5s while realtime is down, every 8s as a safety net while live
+    if (password && Date.now() - lastPoll >= (live ? 8000 : 2500)) loadHistory();
+  }
+  function scheduleRetry() {
+    if (!password) return;
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(() => { if (password && !live) subscribe(); }, retryDelay);
+    retryDelay = Math.min(retryDelay * 2, 30000);
+  }
+  function subscribe() {
+    if (channel) { try { sb.removeChannel(channel); } catch {} channel = null; }
+    const mine = channel = sb.channel('desk-alert-' + Date.now())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (p) => add(p.new, true))
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'notifications' }, (p) => {
         if (p.old && p.old.id) removeCard(p.old.id); else loadHistory();
       })
-      .subscribe((s, err) => {
-        live = (s === 'SUBSCRIBED');
-        if (live) { setStatus('● Live', 'bg-emerald-900 text-emerald-300'); loadHistory(); }
-        else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') {
-          console.error('Realtime', s, err);
-          setStatus('Realtime down, polling…', 'bg-amber-900 text-amber-300');
+      .subscribe((st, err) => {
+        if (mine !== channel) return;    // ignore events from a channel we already replaced
+        live = (st === 'SUBSCRIBED');
+        if (live) { retryDelay = 3000; clearTimeout(retryTimer); setStatus('● Live', 'bg-emerald-900 text-emerald-300'); loadHistory(); }
+        else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED') {
+          if (err) console.error('Realtime', st, err);
+          setStatus('Reconnecting… (checking every few seconds)', 'bg-amber-900 text-amber-300');
+          scheduleRetry();
         }
-        else if (s === 'CLOSED') setStatus('Offline, polling…', 'bg-slate-800 text-slate-400');
       });
   }
+  function connect() {
+    loadHistory();                       // never depend on realtime for the first paint
+    startTicker();
+    if (!cfg.SUPABASE_ANON_KEY || /YOUR_/.test(cfg.SUPABASE_ANON_KEY)) {
+      setStatus('Set SUPABASE_ANON_KEY in config.js (polling)', 'bg-amber-900 text-amber-300'); return;
+    }
+    sb = sb || window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { realtime: { worker: true, heartbeatIntervalMs: 15000 } });
+    subscribe();
+  }
   async function loadHistory() {
-    const r = await api('/api/history', 'GET', password);
+    if (loading) return; loading = true; lastPoll = Date.now();
+    let r; try { r = await api('/api/history', 'GET', password); } catch { loading = false; return; }
+    loading = false;
     if (r.status === 401) return logout();
     const items = r.data.items || [];
     if (loadedOnce && items.length < 100) {      // drop cards that were deleted elsewhere (ignore very recent ones)
@@ -266,7 +291,7 @@
   // ---------- Session ----------
   function showApp() { $('login').classList.add('hidden'); $('app').classList.remove('hidden'); connect(); }
   function logout() {
-    sessionStorage.removeItem('da_pw'); password = ''; clearInterval(pollTimer); live = false; loadedOnce = false;
+    sessionStorage.removeItem('da_pw'); password = ''; stopTicker(); clearTimeout(retryTimer); retryDelay = 3000; live = false; loadedOnce = false;
     if (channel && sb) sb.removeChannel(channel);
     channel = null; resetList();
     $('app').classList.add('hidden'); $('login').classList.remove('hidden');
@@ -292,7 +317,10 @@
     const r = await api('/api/clear', 'DELETE', password);
     if (r.ok) resetList(); else alert('Could not clear history.');
   });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && document.hasFocus()) markRead(); });
+  // Coming back to the tab or regaining network: catch up immediately and reconnect realtime if needed
+  function resync() { if (!password) return; loadHistory(); if (sb && !live) { retryDelay = 3000; subscribe(); } }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { resync(); if (document.hasFocus()) markRead(); } });
+  window.addEventListener('online', resync);
   window.addEventListener('focus', markRead);
 
   const DENS = ['small', 'medium', 'large'];
