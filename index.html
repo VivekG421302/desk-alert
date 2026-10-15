@@ -132,10 +132,12 @@
   const ICONS = {
     call: `<svg viewBox="0 0 32 32" aria-label="Call"><circle cx="16" cy="16" r="16" fill="#fff"/><g transform="translate(6.5 6.5) scale(.8)"><path d="${PHONE}" fill="#dc2626"/></g></svg>`,
     whatsapp: `<svg viewBox="0 0 32 32" aria-label="WhatsApp"><circle cx="16" cy="16" r="16" fill="#25D366"/><path d="M16 6.5a9.5 9.5 0 0 0-8.1 14.4L6.5 25.5l4.8-1.3A9.5 9.5 0 1 0 16 6.5z" fill="#fff"/><g transform="translate(9.6 9.6) scale(.55)"><path d="${PHONE}" fill="#25D366"/></g></svg>`,
+    app: `<svg viewBox="0 0 32 32" aria-label="Notification"><circle cx="16" cy="16" r="16" fill="#0ea5e9"/><g transform="translate(7 7) scale(.75)"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" fill="#fff"/></g></svg>`,
     message: `<svg viewBox="0 0 32 32" aria-label="Message"><circle cx="16" cy="16" r="16" fill="#4f46e5"/><g transform="translate(7 7) scale(.75)"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="#fff"/></g></svg>`,
   };
   function iconFor(n) {
-    const kind = n.type === 'CALL' ? 'call' : /whatsapp/i.test(n.app_name || '') ? 'whatsapp' : 'message';
+    const a = n.app_name || '';
+    const kind = n.type === 'CALL' ? 'call' : /whatsapp/i.test(a) ? 'whatsapp' : /messag|sms|mms/i.test(a) ? 'message' : 'app';
     const d = document.createElement('div'); d.className = 'ico'; d.innerHTML = ICONS[kind]; return d;   // static strings only
   }
   function card(n, isNew) {
@@ -173,7 +175,7 @@
   }
   function replyBox(n) {
     const f = document.createElement('div'); f.className = 'reply mt-3 flex gap-2 items-center flex-wrap';
-    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Reply on WhatsApp…'; inp.maxLength = 1000;
+    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Reply…'; inp.maxLength = 1000;
     inp.className = 'flex-1 min-w-0 rounded-lg bg-slate-800 border border-slate-700 px-3 py-1.5 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500';
     const btn = document.createElement('button'); btn.textContent = 'Reply';
     btn.className = 'rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-sm font-semibold text-white transition disabled:opacity-50';
