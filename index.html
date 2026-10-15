@@ -16,6 +16,39 @@
     .call-flash { animation: callFlash 0.9s ease-in-out infinite; border-color: #fecaca; }
     @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
     .slide-in { animation: slideIn .25s ease-out; }
+    #list { display: grid; gap: .75rem; grid-template-columns: 1fr; }
+    #list[data-density="large"]  { max-width: 48rem; margin: 0 auto; }
+    #list[data-density="medium"] { grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); }
+    #list[data-density="small"]  { grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: .5rem; }
+    .card { display: flex; gap: .75rem; align-items: flex-start; border-width: 1px; border-radius: .75rem; padding: 1rem; cursor: default; }
+    .card .ico { flex: none; width: 44px; height: 44px; }
+    .card .ico svg { width: 100%; height: 100%; display: block; }
+    .card .body { min-width: 0; flex: 1; }
+    .card .meta { display: flex; align-items: center; gap: .5rem; font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; }
+    .card .applabel { opacity: .85; }
+    .card .pill { padding: .1rem .5rem; border-radius: 9999px; font-weight: 700; white-space: nowrap; background: #fff; color: #b91c1c; }
+    .card .time { margin-left: auto; text-transform: none; letter-spacing: 0; white-space: nowrap; font-size: .85rem; font-weight: 500; }
+    .card .del { border-radius: .4rem; padding: .1rem .5rem; line-height: 1.2; background: rgba(0,0,0,.3); color: #fff; }
+    .card .del:hover { background: rgba(0,0,0,.6); }
+    .card .title { margin-top: .25rem; font-size: 1.125rem; font-weight: 600; overflow-wrap: anywhere; }
+    .card .msg { margin-top: .125rem; font-size: .875rem; opacity: .9; white-space: pre-wrap; overflow-wrap: anywhere; }
+    #list[data-density="medium"] .card { padding: .65rem .75rem; gap: .6rem; }
+    #list[data-density="medium"] .ico { width: 34px; height: 34px; }
+    #list[data-density="medium"] .pill { font-size: .65rem; }
+    #list[data-density="medium"] .title { font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #list[data-density="medium"] .msg { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: normal; }
+    #list[data-density="small"] .card { padding: .4rem .55rem; gap: .5rem; border-radius: .6rem; cursor: pointer; }
+    #list[data-density="small"] .ico { width: 26px; height: 26px; }
+    #list[data-density="small"] .applabel { display: none; }
+    #list[data-density="small"] .time { font-size: .7rem; }
+    #list[data-density="small"] .pill { font-size: .6rem; padding: 0 .4rem; }
+    #list[data-density="small"] .del { padding: 0 .35rem; font-size: .75rem; }
+    #list[data-density="small"] .title { font-size: .85rem; margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #list[data-density="small"] .msg { font-size: .75rem; margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #list[data-density="small"] .reply { display: none; }
+    #list[data-density="small"] .card.expanded .title,
+    #list[data-density="small"] .card.expanded .msg { white-space: pre-wrap; overflow: visible; }
+    #list[data-density="small"] .card.expanded .reply { display: flex; }
     @media (prefers-reduced-motion: reduce) { .call-flash { animation: none; background-color: #dc2626; } .slide-in { animation: none; } }
   </style>
 </head>
@@ -36,16 +69,21 @@
   </section>
 
   <!-- Dashboard -->
-  <main id="app" class="hidden max-w-3xl mx-auto p-4 sm:p-6">
+  <main id="app" class="hidden max-w-6xl mx-auto p-4 sm:p-6">
     <header class="flex flex-wrap items-center gap-3 mb-6">
       <h1 class="text-xl sm:text-2xl font-bold flex-1">Desk Alert Bridge</h1>
+      <div id="densityBox" class="flex rounded-lg overflow-hidden border border-slate-700" role="group" aria-label="Tile size">
+        <button data-d="small" title="Small tiles" class="px-3 py-1.5 text-sm transition">S</button>
+        <button data-d="medium" title="Medium tiles" class="px-3 py-1.5 text-sm transition">M</button>
+        <button data-d="large" title="Large tiles" class="px-3 py-1.5 text-sm transition">L</button>
+      </div>
       <span id="status" class="text-xs px-2 py-1 rounded-full bg-slate-800 text-slate-400">Connecting…</span>
       <button id="readBtn" class="text-sm rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-1.5 transition">Mark all read</button>
       <button id="clearBtn" class="text-sm rounded-lg bg-red-600/20 text-red-300 hover:bg-red-600/40 px-3 py-1.5 transition">Clear history</button>
       <button id="logoutBtn" class="text-sm rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-1.5 transition">Lock</button>
     </header>
     <p id="empty" class="text-center text-slate-500 py-16">No alerts yet. Waiting for your phone…</p>
-    <ul id="list" class="space-y-3"></ul>
+    <ul id="list" data-density="large"></ul>
   </main>
 
 <script>
@@ -90,39 +128,51 @@
     const t = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     return d.toDateString() === new Date().toDateString() ? t : d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' + t;
   };
+  const PHONE = 'M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z';
+  const ICONS = {
+    call: `<svg viewBox="0 0 32 32" aria-label="Call"><circle cx="16" cy="16" r="16" fill="#fff"/><g transform="translate(6.5 6.5) scale(.8)"><path d="${PHONE}" fill="#dc2626"/></g></svg>`,
+    whatsapp: `<svg viewBox="0 0 32 32" aria-label="WhatsApp"><circle cx="16" cy="16" r="16" fill="#25D366"/><path d="M16 6.5a9.5 9.5 0 0 0-8.1 14.4L6.5 25.5l4.8-1.3A9.5 9.5 0 1 0 16 6.5z" fill="#fff"/><g transform="translate(9.6 9.6) scale(.55)"><path d="${PHONE}" fill="#25D366"/></g></svg>`,
+    message: `<svg viewBox="0 0 32 32" aria-label="Message"><circle cx="16" cy="16" r="16" fill="#4f46e5"/><g transform="translate(7 7) scale(.75)"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="#fff"/></g></svg>`,
+  };
+  function iconFor(n) {
+    const kind = n.type === 'CALL' ? 'call' : /whatsapp/i.test(n.app_name || '') ? 'whatsapp' : 'message';
+    const d = document.createElement('div'); d.className = 'ico'; d.innerHTML = ICONS[kind]; return d;   // static strings only
+  }
   function card(n, isNew) {
     const call = n.type === 'CALL';
     const li = document.createElement('li');
     li.dataset.id = n.id; li.dataset.new = isNew ? '1' : '0';
-    li.className = 'slide-in rounded-xl border p-4 ' + (call && isNew ? 'call-flash text-white' : call ? 'bg-red-950 border-red-900' : 'bg-slate-900 border-slate-800');
-    const top = document.createElement('div'); top.className = 'flex items-center gap-2 text-xs uppercase tracking-wide opacity-80';
-    const badge = document.createElement('span');
-    badge.className = 'px-2 py-0.5 rounded-full font-bold ' + (call ? 'bg-white text-red-700' : 'bg-indigo-600 text-white');
-    badge.textContent = call ? '📞 Incoming call' : n.app_name;
-    const time = document.createElement('span'); time.className = 'ml-auto normal-case whitespace-nowrap text-sm font-medium opacity-100'; time.textContent = fmt(n.created_at);
-    top.append(badge);
-    if (call) { const a = document.createElement('span'); a.textContent = n.app_name; top.append(a); }
-    if (isNew) { const d = document.createElement('span'); d.className = 'new-dot w-2 h-2 rounded-full bg-emerald-400'; top.append(d); }
-    top.append(time);
-    const del = document.createElement('button'); del.textContent = '✕'; del.title = 'Delete this alert'; del.setAttribute('aria-label', 'Delete');
-    del.className = 'ml-1 rounded-md px-2 py-0.5 text-base leading-none bg-black/30 hover:bg-black/60 text-white';
+    li.dataset.ts = String(new Date(n.created_at).getTime());
+    li.className = 'card slide-in ' + (call && isNew ? 'call-flash text-white' : call ? 'bg-red-950 border-red-900' : 'bg-slate-900 border-slate-800');
+
+    const meta = document.createElement('div'); meta.className = 'meta';
+    if (call) { const p = document.createElement('span'); p.className = 'pill'; p.textContent = 'Incoming call'; meta.append(p); }
+    const app = document.createElement('span'); app.className = 'applabel'; app.textContent = n.app_name; meta.append(app);
+    if (isNew) { const d = document.createElement('span'); d.className = 'new-dot w-2 h-2 rounded-full bg-emerald-400'; meta.append(d); }
+    const time = document.createElement('span'); time.className = 'time'; time.textContent = fmt(n.created_at); meta.append(time);
+    const del = document.createElement('button'); del.className = 'del'; del.textContent = '✕'; del.title = 'Delete this alert'; del.setAttribute('aria-label', 'Delete');
     del.addEventListener('click', async () => {
       del.disabled = true; li.style.opacity = '.4';
       const r = await api('/api/notification?id=' + encodeURIComponent(n.id), 'DELETE', password).catch(() => ({ ok: false }));
       if (r.ok) removeCard(n.id); else { del.disabled = false; li.style.opacity = ''; alert('Could not delete.'); }
     });
-    top.append(del);
-    li.dataset.ts = String(new Date(n.created_at).getTime());
-    const h = document.createElement('div'); h.className = 'mt-2 text-lg font-semibold break-words'; h.textContent = n.title;
-    const m = document.createElement('div'); m.className = 'mt-1 text-sm opacity-90 whitespace-pre-wrap break-words'; m.textContent = n.message;
-    li.append(top, h, m);
-    if (n.can_reply && !call) li.append(replyBox(n));
-    // Tapping a flashing call card acknowledges it
-    li.addEventListener('click', (ev) => { if (ev.target.closest('input,button')) return; li.classList.remove('call-flash', 'text-white'); if (call) li.classList.add('bg-red-950', 'border-red-900'); });
+    meta.append(del);
+
+    const h = document.createElement('div'); h.className = 'title'; h.textContent = n.title;
+    const m = document.createElement('div'); m.className = 'msg'; m.textContent = n.message;
+    const body = document.createElement('div'); body.className = 'body'; body.append(meta, h, m);
+    if (n.can_reply && !call) body.append(replyBox(n));
+    li.append(iconFor(n), body);
+    // Tap: acknowledge a flashing call; in small layout also expands/collapses the tile
+    li.addEventListener('click', (ev) => {
+      if (ev.target.closest('input,button')) return;
+      li.classList.remove('call-flash', 'text-white'); if (call) li.classList.add('bg-red-950', 'border-red-900');
+      li.classList.toggle('expanded');
+    });
     return li;
   }
   function replyBox(n) {
-    const f = document.createElement('div'); f.className = 'mt-3 flex gap-2 items-center flex-wrap';
+    const f = document.createElement('div'); f.className = 'reply mt-3 flex gap-2 items-center flex-wrap';
     const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Reply on WhatsApp…'; inp.maxLength = 1000;
     inp.className = 'flex-1 min-w-0 rounded-lg bg-slate-800 border border-slate-700 px-3 py-1.5 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500';
     const btn = document.createElement('button'); btn.textContent = 'Reply';
@@ -242,6 +292,21 @@
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && document.hasFocus()) markRead(); });
   window.addEventListener('focus', markRead);
+
+  const DENS = ['small', 'medium', 'large'];
+  function applyDensity(d) {
+    if (!DENS.includes(d)) d = 'large';
+    $('list').dataset.density = d;
+    document.querySelectorAll('#densityBox button').forEach((b) => {
+      const on = b.dataset.d === d;
+      b.className = 'px-3 py-1.5 text-sm transition ' + (on ? 'bg-indigo-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300');
+      b.setAttribute('aria-pressed', on);
+    });
+    try { localStorage.setItem('da_density', d); } catch {}
+  }
+  document.querySelectorAll('#densityBox button').forEach((b) => b.addEventListener('click', () => applyDensity(b.dataset.d)));
+  let savedD = 'large'; try { savedD = localStorage.getItem('da_density') || 'large'; } catch {}
+  applyDensity(savedD);
 
   updateTitle();
   if (password) api('/api/verify', 'POST', password).then((r) => r.ok ? showApp() : logout()).catch(() => {});
