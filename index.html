@@ -130,7 +130,7 @@
   function connect() {
     loadHistory();                       // never depend on realtime for the first paint
     clearInterval(pollTimer);
-    pollTimer = setInterval(() => { if (!live) loadHistory(); }, 5000);  // fallback while realtime is down
+    pollTimer = setInterval(loadHistory, 4000);  // safety net: also catches anything realtime misses (deduped by id)
     if (!cfg.SUPABASE_ANON_KEY || /YOUR_/.test(cfg.SUPABASE_ANON_KEY)) {
       setStatus('Set SUPABASE_ANON_KEY in config.js (polling)', 'bg-amber-900 text-amber-300'); return;
     }
