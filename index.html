@@ -12,78 +12,98 @@
   <style>
     :root { color-scheme: dark; }
     body { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+    button { -webkit-tap-highlight-color: transparent; }
+    svg.i { width: 22px; height: 22px; fill: currentColor; display: block; }
 
     /* ---- incoming-call flash ---- */
-    @keyframes callFlash {
-      0%, 100% { background-color: #dc2626; box-shadow: 0 0 0 0 rgba(239,68,68,.8); }
-      50%      { background-color: #7f1d1d; box-shadow: 0 0 0 14px rgba(239,68,68,0); }
-    }
+    @keyframes callFlash { 0%,100% { background-color: #dc2626; box-shadow: 0 0 0 0 rgba(239,68,68,.8); } 50% { background-color: #7f1d1d; box-shadow: 0 0 0 14px rgba(239,68,68,0); } }
     .call-flash { animation: callFlash .9s ease-in-out infinite; border-color: #fecaca !important; color: #fff; }
     @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
     .slide-in { animation: slideIn .25s ease-out; }
     @media (prefers-reduced-motion: reduce) { .call-flash { animation: none; background-color: #dc2626; } .slide-in { animation: none; } }
 
-    /* ---- containers: list / grid, three sizes ---- */
+    /* ---- toolbar: icon toggle buttons ---- */
+    .tbtn { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; background: #17181c; border: 1px solid #2a2b31; color: #cbd5e1; flex: none; font-weight: 700; font-size: 15px; }
+    .tbtn:hover { background: #202228; }
+    .tbtn.on { background: #3730a3; border-color: #4f46e5; color: #fff; }
+    .tbtn.off { color: #64748b; }
+    @media (max-width: 480px) { .tbtn { width: 38px; height: 38px; border-radius: 12px; } .tsep { display: none; } svg.i { width: 20px; height: 20px; } }
+    .tbtn.danger:hover { background: #7f1d1d; border-color: #b91c1c; color: #fff; }
+
+    /* ---- containers ---- */
     .items { display: flex; flex-direction: column; gap: .5rem; }
-    #app[data-view="grid"] .items { display: grid; gap: .6rem; }
+    #app[data-view="grid"] .items { display: grid; gap: .6rem; align-items: start; }
     #app[data-view="grid"][data-size="L"] .items { grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr)); }
-    #app[data-view="grid"][data-size="M"] .items { grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); }
-    #app[data-view="grid"][data-size="S"] .items { grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr)); gap: .45rem; }
+    #app[data-view="grid"][data-size="M"] .items { grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
+    #app[data-view="grid"][data-size="S"] .items { grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr)); gap: .45rem; }
 
-    /* ---- card ---- */
-    .card { display: flex; gap: .75rem; align-items: flex-start; border: 1px solid #1e293b; background: #0f172a; border-radius: .9rem; padding: .9rem; min-width: 0; }
+    /* ---- notification card (Android-shade style) ---- */
+    .card { position: relative; display: flex; gap: .8rem; align-items: flex-start; background: #17181c; border: 1px solid #26272d; border-radius: 1.4rem; padding: .85rem 1rem; min-width: 0; touch-action: pan-y; }
     .card.is-new { border-color: #4338ca; box-shadow: inset 3px 0 0 #6366f1; }
-    .card.is-missed { background: #1c0a0a; border-color: #7f1d1d; }
-    .card .ico { flex: none; width: 42px; height: 42px; }
+    .card.is-missed { background: #1c0d0e; border-color: #7f1d1d; }
+    .card .ico { flex: none; width: 40px; height: 40px; margin-top: 2px; }
     .card .ico svg { width: 100%; height: 100%; display: block; }
-    .card .main { min-width: 0; flex: 1; }
-    .card .meta { display: flex; align-items: center; gap: .4rem; font-size: .72rem; color: #94a3b8; }
-    .card .meta .app { text-transform: uppercase; letter-spacing: .05em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .card .meta .time { margin-left: auto; white-space: nowrap; font-size: .8rem; font-weight: 500; color: #cbd5e1; }
-    .card .del { border-radius: .4rem; padding: .05rem .45rem; line-height: 1.2; background: rgba(148,163,184,.15); color: #cbd5e1; }
-    .card .del:hover { background: rgba(239,68,68,.45); color: #fff; }
-    .card .title { margin-top: .2rem; font-size: 1.05rem; font-weight: 600; color: #f1f5f9; overflow-wrap: anywhere; }
-    .card .msg { margin-top: .1rem; font-size: .875rem; color: #cbd5e1; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .card .body { min-width: 0; flex: 1; }
+    .card .head { display: flex; align-items: center; gap: .4rem; font-size: .8rem; color: #9aa0ad; min-height: 28px; }
+    .card .head .app { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .card .head .time { white-space: nowrap; }
+    .card .head .sp { flex: 1; }
     .card .dot { width: .5rem; height: .5rem; border-radius: 9999px; background: #34d399; flex: none; }
+    .ibtn { width: 28px; height: 28px; border-radius: 9999px; display: grid; place-items: center; background: #2a2b31; color: #cbd5e1; flex: none; }
+    .ibtn:hover { background: #3a3c44; }
+    .ibtn svg.i { width: 18px; height: 18px; }
+    .card .del { opacity: 0; transition: opacity .12s; }
+    .card:hover .del, .card:focus-within .del { opacity: 1; }
+    .card .del:hover { background: #b91c1c; color: #fff; }
+    @media (hover: none) { .card .del { display: none; } }
+    .card .title { font-size: 1.05rem; font-weight: 600; color: #f1f5f9; overflow-wrap: anywhere; line-height: 1.3; }
+    .card .msg { margin-top: .1rem; font-size: .92rem; color: #c7ccd6; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.35; }
+    .card .actions { display: flex; gap: 1.4rem; margin-top: .65rem; }
+    .card .act { color: #b9bcff; font-weight: 600; font-size: .92rem; padding: .15rem 0; }
+    .card .act:hover { text-decoration: underline; }
+    .card .act.warn { color: #fca5a5; }
+    .card.call-flash .head, .card.call-flash .msg, .card.call-flash .title { color: #fff; }
 
-    #app[data-size="M"] .card { padding: .65rem .75rem; gap: .6rem; }
-    #app[data-size="M"] .ico { width: 34px; height: 34px; }
-    #app[data-size="M"] .title { font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    #app[data-size="M"] .msg { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    #app[data-size="S"] .card { padding: .4rem .55rem; gap: .5rem; border-radius: .6rem; cursor: pointer; }
-    #app[data-size="S"] .ico { width: 26px; height: 26px; }
-    #app[data-size="S"] .app { display: none; }
-    #app[data-size="S"] .meta .time { font-size: .7rem; }
-    #app[data-size="S"] .del { padding: 0 .35rem; font-size: .75rem; }
-    #app[data-size="S"] .title { font-size: .85rem; margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    #app[data-size="S"] .msg { font-size: .75rem; margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    #app[data-size="S"] .reply { display: none; }
-    #app[data-size="S"] .card.expanded .title, #app[data-size="S"] .card.expanded .msg { white-space: pre-wrap; overflow: visible; display: block; }
-    #app[data-size="S"] .card.expanded .reply { display: flex; }
-    #app[data-view="grid"][data-size="L"] .msg { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+    /* collapsed text by size (open cards always show everything) */
+    #app[data-size="S"] .card:not(.open) .title, #app[data-size="S"] .card:not(.open) .msg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    #app[data-size="M"] .card:not(.open) .title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #app[data-size="M"] .card:not(.open) .msg { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    #app[data-size="S"] .card { padding: .5rem .75rem; gap: .6rem; border-radius: 1rem; }
+    #app[data-size="S"] .card .ico { width: 30px; height: 30px; }
+    #app[data-size="S"] .card .title { font-size: .92rem; }
+    #app[data-size="S"] .card .msg { font-size: .82rem; }
+    #app[data-size="S"] .card .head { min-height: 22px; font-size: .72rem; }
+    #app[data-size="M"] .card { padding: .65rem .85rem; }
+    #app[data-size="M"] .card .ico { width: 34px; height: 34px; }
+    #app[data-view="grid"][data-size="L"] .card:not(.open) .msg { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+    .tray-body .card .app, .tray-body .card .sep { display: none; }
+
+    /* ---- reply panel ---- */
+    .replypanel { margin-top: .6rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .chip { border: 1px solid #3b3d6b; background: #1d1f3a; color: #c9ccff; border-radius: 9999px; padding: .28rem .75rem; font-size: .85rem; }
+    .chip:hover { background: #2a2d57; }
+    .chip:disabled { opacity: .5; }
+    .rrow { display: flex; gap: .5rem; margin-top: .5rem; }
+    .rrow input { flex: 1; min-width: 0; border-radius: .8rem; background: #0f1014; border: 1px solid #2f3038; padding: .45rem .75rem; font-size: .92rem; color: #f1f5f9; outline: none; }
+    .rrow input:focus { border-color: #6366f1; }
+    .rrow button { border-radius: .8rem; background: #059669; color: #fff; font-weight: 600; padding: .45rem .9rem; font-size: .9rem; }
+    .rrow button:disabled { opacity: .5; }
+    .rstatus { font-size: .75rem; color: #94a3b8; margin-top: .3rem; min-height: 1em; }
 
     /* ---- trays ---- */
-    .tray { border: 1px solid #1e293b; background: #0b1224; border-radius: 1rem; overflow: hidden; }
-    .tray-head { display: flex; align-items: center; gap: .6rem; padding: .6rem .75rem; cursor: pointer; user-select: none; }
-    .tray-head:hover { background: #111a33; }
-    .tray-head .ico { width: 30px; height: 30px; flex: none; }
+    .tray { border: 1px solid #26272d; background: #101116; border-radius: 1.4rem; overflow: hidden; }
+    .tray-head { display: flex; align-items: center; gap: .6rem; padding: .6rem .8rem; cursor: pointer; user-select: none; }
+    .tray-head:hover { background: #16171c; }
+    .tray-head .ico { width: 32px; height: 32px; flex: none; }
     .tray-head .ico svg { width: 100%; height: 100%; display: block; }
-    .tray-body { padding: .5rem .6rem .7rem; }
-    .pill { font-size: .7rem; padding: .05rem .5rem; border-radius: 9999px; background: #1e293b; color: #cbd5e1; font-weight: 600; }
+    .tray-body { padding: .3rem .6rem .7rem; }
+    .pill { font-size: .7rem; padding: .05rem .5rem; border-radius: 9999px; background: #26272d; color: #cbd5e1; font-weight: 600; }
     .pill.new { background: #4f46e5; color: #fff; }
+    .moreBtn { margin-top: .5rem; border: 1px solid #2f3038; background: #17181c; color: #cbd5e1; border-radius: .8rem; padding: .3rem .8rem; font-size: .85rem; }
 
-    .tray-body .card .app { display: none; }   /* the tray header already names the app */
-    .tray-body .card .meta { justify-content: flex-end; }
-
-    /* ---- seg controls ---- */
-    .seg { display: inline-flex; border: 1px solid #334155; border-radius: .6rem; overflow: hidden; flex: none; }
-    .seg button { padding: .3rem .65rem; font-size: .8rem; color: #cbd5e1; background: #111a33; }
-    .seg button.on { background: #4f46e5; color: #fff; }
-    .tool { flex: none; border-radius: .6rem; padding: .3rem .65rem; font-size: .8rem; background: #111a33; border: 1px solid #334155; color: #cbd5e1; white-space: nowrap; }
-    .tool:hover { background: #1b2750; }
-    .tool.on { background: #14532d; border-color: #166534; color: #bbf7d0; }
-    .scrollx { overflow-x: auto; scrollbar-width: none; }
-    .scrollx::-webkit-scrollbar { display: none; }
+    #toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(20px); background: #27272f; color: #f1f5f9; border: 1px solid #3a3b45; padding: .55rem 1rem; border-radius: 9999px; font-size: .88rem; opacity: 0; pointer-events: none; transition: all .2s; z-index: 80; max-width: 90vw; }
+    #toast.show { opacity: 1; transform: translateX(-50%); }
   </style>
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-100 antialiased">
@@ -105,37 +125,39 @@
   <!-- Dashboard -->
   <main id="app" class="hidden max-w-6xl mx-auto px-3 sm:px-6 pb-10" data-view="list" data-size="L">
 
-    <!-- Sticky: incoming-call banners (visible on every tab) + tabs -->
+    <!-- Sticky: incoming-call banners (every tab) + header + tabs -->
     <div class="sticky top-0 z-40 -mx-3 sm:-mx-6 px-3 sm:px-6 pt-2 pb-2 bg-slate-950/95 backdrop-blur border-b border-slate-800/70">
       <div id="callDock" class="space-y-2 empty:hidden"></div>
       <div class="flex items-center gap-2 mt-1">
         <h1 class="text-lg sm:text-xl font-bold mr-auto">Desk Alert</h1>
         <span id="status" class="text-xs px-2 py-1 rounded-full bg-slate-800 text-slate-400">Connecting…</span>
-        <button id="lockBtn" class="tool">Lock</button>
+        <button id="lockBtn" class="tbtn" style="width:36px;height:36px" title="Lock" aria-label="Lock"></button>
       </div>
       <div class="flex gap-2 mt-2" role="tablist">
-        <button id="tabCalls" role="tab" class="flex-1 rounded-xl px-3 py-2 text-sm font-semibold bg-slate-900 border border-slate-800">📞 Calls <span id="cntCalls" class="pill ml-1">0</span></button>
-        <button id="tabNotes" role="tab" class="flex-1 rounded-xl px-3 py-2 text-sm font-semibold bg-slate-900 border border-slate-800">🔔 Notifications <span id="cntNotes" class="pill ml-1">0</span></button>
+        <button id="tabCalls" role="tab" class="flex-1 rounded-2xl px-3 py-2 text-sm font-semibold border flex items-center justify-center gap-2"><span data-i="phone"></span>Calls <span id="cntCalls" class="pill">0</span></button>
+        <button id="tabNotes" role="tab" class="flex-1 rounded-2xl px-3 py-2 text-sm font-semibold border flex items-center justify-center gap-2"><span data-i="bell"></span>Notifications <span id="cntNotes" class="pill">0</span></button>
       </div>
     </div>
 
-    <!-- Controls -->
-    <div class="scrollx flex items-center gap-2 py-3">
-      <div class="seg" id="segView" title="Layout"><button data-v="list">List</button><button data-v="grid">Grid</button></div>
-      <div class="seg" id="segSize" title="Size"><button data-v="S">S</button><button data-v="M">M</button><button data-v="L">L</button></div>
-      <div class="seg" id="segGroup" title="Notification grouping"><button data-v="tray">Trays</button><button data-v="timeline">Timeline</button></div>
-      <button id="soundBtn" class="tool">🔊 Sound</button>
-      <button id="testBtn" class="tool">▶ Test</button>
-      <button id="deskBtn" class="tool">🖥 Desktop alerts</button>
-      <button id="readBtn" class="tool">✓ Mark all read</button>
-      <button id="clearBtn" class="tool">🗑 Clear all</button>
+    <!-- Toolbar: icon toggle buttons -->
+    <div class="flex items-center gap-1.5 sm:gap-2 py-3 flex-wrap">
+      <button id="bView" class="tbtn" aria-label="Layout"></button>
+      <button id="bSize" class="tbtn" aria-label="Size"></button>
+      <button id="bGroup" class="tbtn" aria-label="Group by app"></button>
+      <span class="tsep w-px h-6 bg-slate-800 mx-1"></span>
+      <button id="bSound" class="tbtn" aria-label="Sound"></button>
+      <button id="bTest" class="tbtn" aria-label="Play test sounds"></button>
+      <button id="bDesk" class="tbtn" aria-label="Desktop popups"></button>
+      <span class="tsep w-px h-6 bg-slate-800 mx-1"></span>
+      <button id="bRead" class="tbtn" aria-label="Mark all read"></button>
+      <button id="bClear" class="tbtn danger" aria-label="Clear all"></button>
     </div>
-    <div id="soundHint" class="hidden mb-3 rounded-xl border border-amber-800 bg-amber-950/60 text-amber-200 text-sm px-3 py-2">🔇 Click anywhere on the page once to enable sound.</div>
+    <div id="soundHint" class="hidden fixed left-1/2 -translate-x-1/2 bottom-5 z-50 rounded-full border border-amber-700 bg-amber-950/95 text-amber-200 text-sm px-4 py-2 shadow-lg pointer-events-none">Tap anywhere once to enable sound</div>
 
     <section id="paneCalls" class="hidden"><div id="callsOut"></div></section>
     <section id="paneNotes"><div id="notesOut"></div></section>
   </main>
-
+  <div id="toast" role="status"></div>
 <script>
 (() => {
   const cfg = window.DESK_ALERT_CONFIG;
@@ -148,21 +170,46 @@
   let password = sessionStorage.getItem('da_pw') || '';
   let sb = null, channel = null, live = false, pollTimer = null, loadedOnce = false;
 
+  // ======================= UI icons (Material paths) =======================
+  const P = {
+    list: 'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z',
+    grid: 'M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z',
+    layers: 'M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z',
+    vol: 'M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z',
+    volOff: 'M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.796 8.796 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z',
+    bell: 'M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z',
+    bellOff: 'M20 18.69L7.84 6.14 5.27 3.49 4 4.76l2.8 2.8v.01c-.52.99-.8 2.16-.8 3.42v5l-2 2v1h13.73l2 2L21 19.72l-1-1.03zM12 22c1.11 0 2-.89 2-2h-4c0 1.11.89 2 2 2zm6-7.32V11c0-3.08-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68c-.15.03-.29.08-.42.12-.1.03-.2.07-.3.11h-.01c-.23.09-.46.2-.68.31L18 14.68z',
+    play: 'M8 5v14l11-7z',
+    doneAll: 'M18 7l-1.41-1.41-6.34 6.34 1.41 1.41L18 7zm4.24-1.41L11.66 16.17 7.48 12l-1.41 1.41L11.66 19l12-12-1.42-1.41zM.41 13.41L6 19l1.41-1.41L1.83 12 .41 13.41z',
+    trash: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
+    more: 'M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z',
+    less: 'M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z',
+    close: 'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+    lock: 'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z',
+    phone: 'M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z',
+    edit: 'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z',
+  };
+  const ico = (k) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="${P[k]}"/></svg>`;
+  document.querySelectorAll('[data-i]').forEach((el) => { el.innerHTML = ico(el.dataset.i); });
+  $('lockBtn').innerHTML = ico('lock');
+
   // ======================= state =======================
   const items = new Map();                 // id -> { n, isNew, addedAt }
   const fresh = new Set();                 // ids to animate in once
   const acked = new Set();                 // ringing calls the user silenced
   const drafts = new Map();                // reply drafts by notification id
+  const flipped = new Set();               // cards whose open/closed state differs from the size default
+  const replying = new Set();              // cards with the reply panel open
+  const replyBusy = new Set();
+  const replyStatus = new Map();
+  const pendingDelete = new Map();         // id -> time; stops in-flight polls from resurrecting a deleted card
   const collapsed = new Set(JSON.parse(lsGet('da_collapsed', '[]')));
-  const showAll = new Set();               // trays showing every item
-  const expanded = new Set();              // small cards opened
+  const showAll = new Set();
+  const DEFAULT_QUICK = ['OK 👍', 'Thanks!', 'On my way', "I'll call you later", 'Busy right now', 'Yes', 'No'];
+  let quick = DEFAULT_QUICK; try { const q = JSON.parse(lsGet('da_quick', 'null')); if (Array.isArray(q) && q.length) quick = q.map(String); } catch {}
   const ui = {
-    tab: lsGet('da_tab', 'notes'),
-    view: lsGet('da_view', 'list'),
-    size: lsGet('da_size', 'L'),
-    group: lsGet('da_group', 'tray'),
-    sound: lsGet('da_sound', '1') === '1',
-    desktop: lsGet('da_desktop', '0') === '1',
+    tab: lsGet('da_tab', 'notes'), view: lsGet('da_view', 'list'), size: lsGet('da_size', 'L'), group: lsGet('da_group', 'tray'),
+    sound: lsGet('da_sound', '1') === '1', desktop: lsGet('da_desktop', '0') === '1',
   };
 
   // ======================= API =======================
@@ -173,13 +220,15 @@
     let data = {}; try { data = await res.json(); } catch {}
     return { ok: res.ok, status: res.status, data };
   }
+  let toastT = null;
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
 
   // ======================= classification =======================
   const isRinging = (n) => n.type === 'CALL';
   const isMissed = (n) => n.type !== 'CALL' && (/missed.*call|call.*missed/i.test(`${n.title} ${n.message}`) || /^(phone|dialer|google phone|samsung phone|call)$/i.test(n.app_name || ''));
   const isCallLike = (n) => isRinging(n) || isMissed(n);
 
-  // ======================= icons =======================
+  // ======================= app icons =======================
   const IC = window.DA_ICONS || { brands: {}, custom: {}, letters: {}, generic: {}, rules: [] };
   const RULES = (IC.rules || []).map(([re, t, k]) => [new RegExp(re, 'i'), t, k]);
   const lum = (hex) => { const r = parseInt(hex.slice(0, 2), 16), g = parseInt(hex.slice(2, 4), 16), b = parseInt(hex.slice(4, 6), 16); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; };
@@ -194,57 +243,56 @@
     return circle(bg, `<text x="16" y="16" dy=".36em" text-anchor="middle" font-family="system-ui,Segoe UI,Arial,sans-serif" font-weight="700" font-size="${fs}" fill="${fg}">${esc(t)}</text>`, label);
   }
   function iconSvg(n) {
-    if (isRinging(n)) return circle('FFFFFF', glyph(IC.generic.phone ? IC.generic.phone[1] : '', '#dc2626'), 'Incoming call');
+    if (isRinging(n)) return circle('FFFFFF', glyph(P.phone, '#dc2626'), 'Incoming call');
     const name = (n.app_name || '').trim();
     const key = (isMissed(n) ? 'missed|' : '') + name.toLowerCase();
     if (iconCache.has(key)) return iconCache.get(key);
     let svg = null;
-    if (isMissed(n)) svg = circle('B91C1C', glyph(IC.generic.phone[1], '#fff'), 'Missed call');
+    if (isMissed(n)) svg = circle('B91C1C', glyph(P.phone, '#fff'), 'Missed call');
     else {
       const lc = name.toLowerCase();
       for (const [re, t, k] of RULES) {
         if (!re.test(lc)) continue;
         const e = (IC[t] || {})[k]; if (!e) continue;
-        if (t === 'letters') svg = letterBadge(e[0], e[1], name);
-        else svg = circle(e[0], glyph(e[1], lum(e[0]) > 0.72 ? '#111' : '#fff'), name);   // brands, custom, generic
+        svg = t === 'letters' ? letterBadge(e[0], e[1], name) : circle(e[0], glyph(e[1], lum(e[0]) > 0.72 ? '#111' : '#fff'), name);
         break;
       }
       if (!svg) svg = letterBadge(hsl2hex(hashHue(lc || 'app'), 55, 42), (name.match(/[\p{L}\p{N}]/u) || ['?'])[0].toUpperCase(), name || 'App');
     }
     iconCache.set(key, svg); return svg;
   }
-  const iconDataUrl = (n) => 'data:image/svg+xml;utf8,' + encodeURIComponent(iconSvg(n));
-  function iconEl(n, cls) { const d = document.createElement('div'); d.className = cls || 'ico'; d.innerHTML = iconSvg(n); return d; }   // svg built from static data + escaped text
+  function iconEl(n, cls) { const d = document.createElement('div'); d.className = cls || 'ico'; d.innerHTML = iconSvg(n); return d; }
+  const pngCache = new Map();
+  function iconPng(n) {                          // PNG for system popups (they do not render SVG everywhere)
+    const svg = iconSvg(n); if (pngCache.has(svg)) return pngCache.get(svg);
+    const p = new Promise((res) => {
+      const img = new Image();
+      img.onload = () => { try { const c = document.createElement('canvas'); c.width = c.height = 96; c.getContext('2d').drawImage(img, 0, 0, 96, 96); res(c.toDataURL('image/png')); } catch { res(undefined); } };
+      img.onerror = () => res(undefined);
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace('<svg ', '<svg width="96" height="96" '));
+    });
+    pngCache.set(svg, p); return p;
+  }
 
   // ======================= sound =======================
   let actx = null, ringTimer = null, lastChime = 0;
-  function audio() {
-    if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); actx.onstatechange = syncHint; } catch { return null; } }
-    return actx;
-  }
+  function audio() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); actx.onstatechange = syncHint; } catch { return null; } } return actx; }
   function unlock() { const a = audio(); if (a && a.state !== 'running') a.resume().then(syncHint).catch(() => {}); syncHint(); }
   function syncHint() { const a = actx; $('soundHint').classList.toggle('hidden', !(ui.sound && !$('app').classList.contains('hidden') && (!a || a.state !== 'running'))); }
-  // bell-like note: fundamental + inharmonic partial, fast attack, exponential decay
   function bell(freq, at, dur, vol) {
     const a = audio(); if (!a || a.state !== 'running') return;
     const t0 = a.currentTime + at;
     [[1, 1], [2.76, 0.28], [5.4, 0.1]].forEach(([mult, g]) => {
       const o = a.createOscillator(), gn = a.createGain();
       o.type = 'sine'; o.frequency.value = freq * mult;
-      gn.gain.setValueAtTime(0.0001, t0);
-      gn.gain.exponentialRampToValueAtTime(vol * g, t0 + 0.012);
-      gn.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      gn.gain.setValueAtTime(0.0001, t0); gn.gain.exponentialRampToValueAtTime(vol * g, t0 + 0.012); gn.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
       o.connect(gn); gn.connect(a.destination); o.start(t0); o.stop(t0 + dur + 0.05);
     });
   }
-  function chimeMessage() {              // short two-note "ding-ding"
-    if (!ui.sound) return; const now = Date.now(); if (now - lastChime < 600) return; lastChime = now;
-    bell(880, 0, 0.7, 0.32); bell(1318.5, 0.13, 0.9, 0.3);
-  }
-  function chimeCall() {                 // long (~3 s) rising phrase, repeated while a call is ringing
+  function chimeMessage() { if (!ui.sound) return; const now = Date.now(); if (now - lastChime < 600) return; lastChime = now; bell(880, 0, 0.7, 0.32); bell(1318.5, 0.13, 0.9, 0.3); }
+  function chimeCall() {
     if (!ui.sound) return;
-    const seq = [[523.25, 0], [659.25, .24], [783.99, .48], [1046.5, .72], [783.99, 1.2], [1046.5, 1.44], [1318.5, 1.68], [1567.98, 1.92]];
-    seq.forEach(([f, t]) => bell(f, t, 1.0, 0.36));
+    [[523.25, 0], [659.25, .24], [783.99, .48], [1046.5, .72], [783.99, 1.2], [1046.5, 1.44], [1318.5, 1.68], [1567.98, 1.92]].forEach(([f, t]) => bell(f, t, 1.0, 0.36));
     bell(1046.5, 2.3, 1.2, 0.3); bell(1318.5, 2.3, 1.2, 0.26);
   }
   const activeCalls = () => [...items.values()].filter((x) => isRinging(x.n) && !acked.has(x.n.id)).map((x) => x.n);
@@ -254,98 +302,158 @@
     if (!ringing && ringTimer) { clearInterval(ringTimer); ringTimer = null; }
   }
 
-  // ======================= desktop notifications =======================
-  function desktopNotify(n) {
-    if (!ui.desktop || !('Notification' in window) || Notification.permission !== 'granted') return;
-    if (!document.hidden && document.hasFocus()) return;
+  // ======================= desktop popups =======================
+  let swReg = null;
+  async function initSW() { if ('serviceWorker' in navigator) { try { swReg = await navigator.serviceWorker.register('sw.js'); } catch {} } }
+  async function popup(title, opts) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return false;
     try {
-      const call = isRinging(n);
-      const x = new Notification(call ? '📞 Incoming call: ' + n.title : `${n.app_name}: ${n.title}`, {
-        body: n.message, tag: n.id, icon: iconDataUrl(n), requireInteraction: call, silent: true,
-      });
-      x.onclick = () => { window.focus(); x.close(); };
+      const reg = swReg || (navigator.serviceWorker && await navigator.serviceWorker.getRegistration());
+      if (reg && reg.showNotification) { await reg.showNotification(title, opts); return true; }
     } catch {}
+    try { const x = new Notification(title, opts); x.onclick = () => { window.focus(); x.close(); }; return true; } catch { return false; }
+  }
+  async function popupFor(n) {
+    if (!ui.desktop) return;
+    const call = isRinging(n);
+    const opts = { body: n.message, tag: n.id, requireInteraction: call, silent: true, data: { id: n.id } };
+    const icon = await iconPng(n); if (icon) opts.icon = icon;
+    popup(call ? 'Incoming call: ' + n.title : `${n.app_name}: ${n.title}`, opts);
   }
 
-  // ======================= title / favicon =======================
+  // ======================= title / favicon / time =======================
   let lastUnread = -1;
   function updateTitle(unread) {
     if (unread === lastUnread) return; lastUnread = unread;
     document.title = unread > 0 ? `(${unread} New) ${BASE_TITLE}` : BASE_TITLE;
     const c = document.createElement('canvas'); c.width = c.height = 32;
-    const x = c.getContext('2d');
-    x.fillStyle = unread ? '#dc2626' : '#4f46e5';
-    x.beginPath(); x.roundRect(0, 0, 32, 32, 8); x.fill();
+    const x = c.getContext('2d'); x.fillStyle = unread ? '#dc2626' : '#4f46e5'; x.beginPath(); x.roundRect(0, 0, 32, 32, 8); x.fill();
     if (unread) { x.fillStyle = '#fff'; x.font = 'bold 20px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(unread > 9 ? '9+' : String(unread), 16, 17); }
     $('favicon').href = c.toDataURL('image/png');
   }
-
-  // ======================= rendering =======================
-  const fmt = (iso) => {
-    const d = new Date(iso); if (isNaN(d)) return '';
-    const t = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    return d.toDateString() === new Date().toDateString() ? t : d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' + t;
-  };
+  function rel(ts) {
+    const m = Math.floor((Date.now() - ts) / 60000);
+    if (m < 1) return 'now'; if (m < 60) return m + 'm'; const h = Math.floor(m / 60); if (h < 24) return h + 'h';
+    return new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+  const full = (ts) => new Date(ts).toLocaleString();
+  setInterval(() => document.querySelectorAll('[data-ts]').forEach((el) => { el.textContent = rel(+el.dataset.ts); }), 30000);
   const byTime = (a, b) => new Date(b.n.created_at) - new Date(a.n.created_at);
 
-  function markOne(id) { const it = items.get(id); if (it && it.isNew) { it.isNew = false; scheduleRender(); } }
-
-  function card(it) {
-    const n = it.n, ring = isRinging(n), missed = isMissed(n);
-    const li = document.createElement('li');
-    li.dataset.id = n.id;
-    li.className = 'card ' + (fresh.has(n.id) ? 'slide-in ' : '') + (it.isNew ? 'is-new ' : '') + (missed ? 'is-missed ' : '') + (ring && !acked.has(n.id) ? 'call-flash ' : '') + (expanded.has(n.id) ? 'expanded' : '');
-    fresh.delete(n.id);
-    const main = document.createElement('div'); main.className = 'main';
-    const meta = document.createElement('div'); meta.className = 'meta';
-    const app = document.createElement('span'); app.className = 'app'; app.textContent = ring ? 'Incoming call · ' + n.app_name : missed ? 'Missed call · ' + n.app_name : n.app_name; meta.append(app);
-    if (it.isNew) { const d = document.createElement('span'); d.className = 'dot'; meta.append(d); }
-    const time = document.createElement('span'); time.className = 'time'; time.textContent = fmt(n.created_at); meta.append(time);
-    const del = document.createElement('button'); del.className = 'del'; del.textContent = '✕'; del.title = 'Delete'; del.setAttribute('aria-label', 'Delete');
-    del.addEventListener('click', async (e) => {
-      e.stopPropagation(); del.disabled = true; li.style.opacity = '.4';
-      const r = await api('/api/notification?id=' + encodeURIComponent(n.id), 'DELETE', password).catch(() => ({ ok: false }));
-      if (r.ok) removeCard(n.id); else { del.disabled = false; li.style.opacity = ''; alert('Could not delete.'); }
-    });
-    meta.append(del);
-    const title = document.createElement('div'); title.className = 'title'; title.textContent = n.title;
-    const msg = document.createElement('div'); msg.className = 'msg'; msg.textContent = n.message;
-    main.append(meta, title, msg);
-    if (n.can_reply && !ring) main.append(replyBox(n));
-    li.append(iconEl(n), main);
-    li.addEventListener('click', (e) => {
-      if (e.target.closest('input,button')) return;
-      if (ring) acked.add(n.id);
-      expanded.has(n.id) ? expanded.delete(n.id) : expanded.add(n.id);
-      markOne(n.id); scheduleRender();
-    });
-    return li;
+  // ======================= reply =======================
+  function setRStatus(id, text) { replyStatus.set(id, text); const el = document.querySelector(`[data-rstatus="${CSS.escape(id)}"]`); if (el) el.textContent = text; }
+  async function sendReply(n, text) {
+    text = (text || '').trim(); if (!text || replyBusy.has(n.id)) return;
+    replyBusy.add(n.id); setRStatus(n.id, 'Sending…'); scheduleRender();
+    const fin = (msg, ok) => { replyBusy.delete(n.id); setRStatus(n.id, msg); if (ok) drafts.delete(n.id); scheduleRender(); };
+    const r = await api('/api/reply', 'POST', password, { notificationId: n.id, text }).catch(() => ({ ok: false, data: {} }));
+    if (!r.ok) return fin(r.data.error || 'Could not queue reply', false);
+    for (let i = 0; i < 20; i++) {
+      await new Promise((res) => setTimeout(res, 1200));
+      const s = await api('/api/reply?id=' + encodeURIComponent(r.data.id), 'GET', password).catch(() => null);
+      if (s && s.data.status === 'sent') return fin('Sent ✓', true);
+      if (s && s.data.status === 'failed') return fin('Failed: ' + (s.data.error || 'unknown'), false);
+    }
+    fin('Phone did not respond (is the app running?)', false);
+  }
+  function editQuick() {
+    const v = prompt('Quick replies (separate with commas):', quick.join(', ')); if (v === null) return;
+    const q = v.split(',').map((s) => s.trim()).filter(Boolean); quick = q.length ? q : DEFAULT_QUICK; lsSet('da_quick', JSON.stringify(quick)); scheduleRender();
+  }
+  function replyPanel(n) {
+    const wrap = document.createElement('div'); wrap.className = 'replypanel';
+    const busy = replyBusy.has(n.id);
+    const chips = document.createElement('div'); chips.className = 'chips';
+    quick.forEach((q) => { const b = document.createElement('button'); b.className = 'chip'; b.textContent = q; b.disabled = busy; b.addEventListener('click', () => sendReply(n, q)); chips.append(b); });
+    const ed = document.createElement('button'); ed.className = 'chip'; ed.innerHTML = ico('edit'); ed.querySelector('svg').style.cssText = 'width:14px;height:14px'; ed.title = 'Edit quick replies'; ed.setAttribute('aria-label', 'Edit quick replies'); ed.addEventListener('click', editQuick); chips.append(ed);
+    const row = document.createElement('div'); row.className = 'rrow';
+    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Type a reply…'; inp.maxLength = 1000; inp.dataset.replyId = n.id; inp.value = drafts.get(n.id) || ''; inp.disabled = busy;
+    inp.addEventListener('input', () => drafts.set(n.id, inp.value));
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendReply(n, inp.value); });
+    const send = document.createElement('button'); send.textContent = 'Send'; send.disabled = busy; send.addEventListener('click', () => sendReply(n, inp.value));
+    row.append(inp, send);
+    const st = document.createElement('div'); st.className = 'rstatus'; st.dataset.rstatus = n.id; st.textContent = replyStatus.get(n.id) || '';
+    wrap.append(chips, row, st); return wrap;
   }
 
-  function replyBox(n) {
-    const f = document.createElement('div'); f.className = 'reply mt-3 flex gap-2 items-center flex-wrap';
-    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Reply…'; inp.maxLength = 1000; inp.dataset.replyId = n.id; inp.value = drafts.get(n.id) || '';
-    inp.className = 'flex-1 min-w-0 rounded-lg bg-slate-800 border border-slate-700 px-3 py-1.5 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500';
-    inp.addEventListener('input', () => drafts.set(n.id, inp.value));
-    const btn = document.createElement('button'); btn.textContent = 'Reply';
-    btn.className = 'rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-sm font-semibold text-white transition disabled:opacity-50';
-    const st = document.createElement('div'); st.className = 'basis-full text-xs text-slate-400';
-    async function go() {
-      const text = inp.value.trim(); if (!text) return;
-      btn.disabled = inp.disabled = true; st.textContent = 'Sending…';
-      const r = await api('/api/reply', 'POST', password, { notificationId: n.id, text }).catch(() => ({ ok: false, data: {} }));
-      if (!r.ok) { st.textContent = r.data.error || 'Could not queue reply'; btn.disabled = inp.disabled = false; return; }
-      for (let i = 0; i < 20; i++) {
-        await new Promise((res) => setTimeout(res, 1500));
-        const s = await api('/api/reply?id=' + encodeURIComponent(r.data.id), 'GET', password).catch(() => null);
-        if (s && s.data.status === 'sent') { st.textContent = 'Sent ✓'; inp.value = ''; drafts.delete(n.id); btn.disabled = inp.disabled = false; return; }
-        if (s && s.data.status === 'failed') { st.textContent = 'Failed: ' + (s.data.error || 'unknown'); btn.disabled = inp.disabled = false; return; }
+  // ======================= delete (button, hover X, swipe) =======================
+  async function deleteItem(id) {
+    const it = items.get(id); if (!it) return;
+    pendingDelete.set(id, Date.now()); removeCard(id);
+    const r = await api('/api/notification?id=' + encodeURIComponent(id), 'DELETE', password).catch(() => ({ ok: false }));
+    if (!r.ok) { pendingDelete.delete(id); items.set(id, it); scheduleRender(); toast('Could not delete'); }
+    else setTimeout(() => pendingDelete.delete(id), 30000);
+  }
+  function attachSwipe(li, id) {
+    let sx = 0, sy = 0, dx = 0, active = false, dragging = false, pid = null;
+    li.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' || e.target.closest('input,button,.chips')) return;
+      active = true; dragging = false; sx = e.clientX; sy = e.clientY; dx = 0; pid = e.pointerId;
+    });
+    li.addEventListener('pointermove', (e) => {
+      if (!active || e.pointerId !== pid) return;
+      const mx = e.clientX - sx, my = e.clientY - sy;
+      if (!dragging) {
+        if (Math.abs(mx) > 10 && Math.abs(mx) > Math.abs(my) * 1.4) { dragging = true; try { li.setPointerCapture(pid); } catch {} li.style.transition = 'none'; }
+        else if (Math.abs(my) > 10) { active = false; return; }
       }
-      st.textContent = 'Phone did not respond (is the app running?)'; btn.disabled = inp.disabled = false;
+      if (dragging) { dx = mx; li.style.transform = `translateX(${dx}px)`; li.style.opacity = String(Math.max(0.25, 1 - Math.abs(dx) / (li.offsetWidth * 0.9))); }
+    });
+    const end = () => {
+      if (!active) return; active = false; if (!dragging) return; dragging = false;
+      li.dataset.swiped = '1'; setTimeout(() => { delete li.dataset.swiped; }, 120);
+      li.style.transition = 'transform .2s, opacity .2s';
+      if (Math.abs(dx) > Math.max(90, li.offsetWidth * 0.35)) { li.style.transform = `translateX(${dx > 0 ? '110%' : '-110%'})`; li.style.opacity = '0'; setTimeout(() => deleteItem(id), 190); }
+      else { li.style.transform = ''; li.style.opacity = ''; }
+    };
+    li.addEventListener('pointerup', end); li.addEventListener('pointercancel', end);
+  }
+
+  // ======================= rendering =======================
+  const isOpen = (id) => (ui.size === 'L') !== flipped.has(id);
+  function markOne(id) { const it = items.get(id); if (it && it.isNew) { it.isNew = false; } }
+  function toggleOpen(id) { flipped.has(id) ? flipped.delete(id) : flipped.add(id); markOne(id); scheduleRender(); }
+
+  function card(it) {
+    const n = it.n, ring = isRinging(n), missed = isMissed(n), open = isOpen(n.id), ts = new Date(n.created_at).getTime();
+    const li = document.createElement('li'); li.dataset.id = n.id;
+    li.className = 'card ' + (fresh.has(n.id) ? 'slide-in ' : '') + (it.isNew ? 'is-new ' : '') + (missed ? 'is-missed ' : '') + (ring && !acked.has(n.id) ? 'call-flash ' : '') + (open ? 'open' : '');
+    fresh.delete(n.id);
+    const body = document.createElement('div'); body.className = 'body';
+    const head = document.createElement('div'); head.className = 'head';
+    const app = document.createElement('span'); app.className = 'app'; app.textContent = ring ? n.app_name + ' · Incoming call' : missed ? n.app_name + ' · Missed call' : n.app_name;
+    const sep = document.createElement('span'); sep.className = 'sep'; sep.textContent = '•';
+    const time = document.createElement('span'); time.className = 'time'; time.dataset.ts = ts; time.title = full(ts); time.textContent = rel(ts);
+    head.append(app, sep, time);
+    if (it.isNew) { const d = document.createElement('span'); d.className = 'dot'; head.append(d); }
+    const sp = document.createElement('span'); sp.className = 'sp'; head.append(sp);
+    const del = document.createElement('button'); del.className = 'ibtn del'; del.innerHTML = ico('close'); del.title = 'Delete'; del.setAttribute('aria-label', 'Delete');
+    del.addEventListener('click', (e) => { e.stopPropagation(); deleteItem(n.id); });
+    const chev = document.createElement('button'); chev.className = 'ibtn'; chev.innerHTML = ico(open ? 'less' : 'more'); chev.title = open ? 'Collapse' : 'Expand'; chev.setAttribute('aria-label', open ? 'Collapse' : 'Expand');
+    chev.addEventListener('click', (e) => { e.stopPropagation(); toggleOpen(n.id); });
+    head.append(del, chev);
+    const title = document.createElement('div'); title.className = 'title'; title.textContent = n.title;
+    const msg = document.createElement('div'); msg.className = 'msg'; msg.textContent = n.message;
+    body.append(head, title, msg);
+    if (open) {
+      const act = document.createElement('div'); act.className = 'actions';
+      if (n.can_reply && !ring) {
+        const r = document.createElement('button'); r.className = 'act'; r.textContent = replying.has(n.id) ? 'Close reply' : 'Reply';
+        r.addEventListener('click', (e) => { e.stopPropagation(); replying.has(n.id) ? replying.delete(n.id) : replying.add(n.id); scheduleRender(); });
+        act.append(r);
+      }
+      const d = document.createElement('button'); d.className = 'act warn'; d.textContent = 'Delete'; d.addEventListener('click', (e) => { e.stopPropagation(); deleteItem(n.id); });
+      act.append(d); body.append(act);
+      if (n.can_reply && !ring && replying.has(n.id)) body.append(replyPanel(n));
     }
-    btn.addEventListener('click', go);
-    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
-    f.append(inp, btn, st); return f;
+    li.append(iconEl(n), body);
+    li.addEventListener('click', (e) => {
+      if (li.dataset.swiped || e.target.closest('input,button')) return;
+      if (ring) acked.add(n.id);
+      toggleOpen(n.id);
+    });
+    attachSwipe(li, n.id);
+    return li;
   }
 
   function itemsList(list) { const ul = document.createElement('ul'); ul.className = 'items'; list.forEach((it) => ul.append(card(it))); return ul; }
@@ -354,15 +462,14 @@
   function renderDock(calls) {
     const dock = $('callDock'); dock.innerHTML = '';
     calls.forEach((n) => {
-      const row = document.createElement('div');
-      row.className = 'call-flash rounded-2xl p-3 flex items-center gap-3 shadow-lg';
-      const ico = iconEl(n, 'ico'); ico.style.cssText = 'width:46px;height:46px;flex:none';
+      const row = document.createElement('div'); row.className = 'call-flash rounded-3xl p-3 flex items-center gap-3 shadow-lg';
+      const ic = iconEl(n, 'ico'); ic.style.cssText = 'width:46px;height:46px;flex:none';
       const txt = document.createElement('div'); txt.className = 'min-w-0 flex-1';
       txt.innerHTML = '<div class="text-xs font-bold tracking-wide uppercase opacity-90">Incoming call · <span class="a"></span></div><div class="t text-lg font-bold truncate"></div><div class="m text-sm opacity-90 truncate"></div>';
       txt.querySelector('.a').textContent = n.app_name; txt.querySelector('.t').textContent = n.title; txt.querySelector('.m').textContent = n.message;
-      const b = document.createElement('button'); b.className = 'rounded-xl bg-white/90 text-red-700 font-bold px-3 py-2 text-sm hover:bg-white'; b.textContent = 'Silence';
+      const b = document.createElement('button'); b.className = 'rounded-2xl bg-white/90 text-red-700 font-bold px-3 py-2 text-sm hover:bg-white'; b.textContent = 'Silence';
       b.addEventListener('click', () => { acked.add(n.id); markOne(n.id); scheduleRender(); });
-      row.append(ico, txt, b); dock.append(row);
+      row.append(ic, txt, b); dock.append(row);
     });
   }
 
@@ -370,25 +477,20 @@
     const out = $('notesOut'); out.innerHTML = '';
     if (!list.length) { out.append(emptyMsg('No notifications yet. Waiting for your phone…')); return; }
     if (ui.group === 'timeline') { out.append(itemsList(list)); return; }
-    // trays: one per app, newest tray first
     const groups = new Map();
     list.forEach((it) => { const k = (it.n.app_name || 'Unknown').toLowerCase(); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(it); });
     const trays = document.createElement('div'); trays.className = 'space-y-3';
     [...groups.entries()].forEach(([k, arr]) => {
-      const first = arr[0].n, open = !collapsed.has(k), newCount = arr.filter((x) => x.isNew).length;
+      const first = arr[0].n, open = !collapsed.has(k), newCount = arr.filter((x) => x.isNew).length, ts = new Date(first.created_at).getTime();
       const tray = document.createElement('div'); tray.className = 'tray';
       const head = document.createElement('div'); head.className = 'tray-head';
       const name = document.createElement('div'); name.className = 'font-semibold truncate'; name.textContent = first.app_name;
       const cnt = document.createElement('span'); cnt.className = 'pill'; cnt.textContent = arr.length;
       const nw = newCount ? Object.assign(document.createElement('span'), { className: 'pill new', textContent: newCount + ' new' }) : null;
-      const when = document.createElement('span'); when.className = 'ml-auto text-xs text-slate-400 whitespace-nowrap'; when.textContent = fmt(first.created_at);
-      const clr = document.createElement('button'); clr.className = 'tool'; clr.textContent = 'Clear'; clr.title = 'Delete all from this app';
-      clr.addEventListener('click', async (e) => {
-        e.stopPropagation(); if (!confirm(`Delete all ${arr.length} from ${first.app_name}?`)) return;
-        const ids = arr.map((x) => x.n.id);
-        await Promise.all(ids.map((id) => api('/api/notification?id=' + encodeURIComponent(id), 'DELETE', password).then((r) => r.ok && removeCard(id)).catch(() => {})));
-      });
-      const chev = document.createElement('span'); chev.className = 'text-slate-400'; chev.textContent = open ? '▾' : '▸';
+      const when = document.createElement('span'); when.className = 'ml-auto text-xs text-slate-400 whitespace-nowrap'; when.dataset.ts = ts; when.textContent = rel(ts);
+      const clr = document.createElement('button'); clr.className = 'ibtn'; clr.innerHTML = ico('trash'); clr.title = `Delete all from ${first.app_name}`; clr.setAttribute('aria-label', 'Clear tray');
+      clr.addEventListener('click', (e) => { e.stopPropagation(); if (confirm(`Delete all ${arr.length} from ${first.app_name}?`)) arr.forEach((x) => deleteItem(x.n.id)); });
+      const chev = document.createElement('span'); chev.className = 'ibtn'; chev.innerHTML = ico(open ? 'less' : 'more');
       head.append(iconEl(first, 'ico'), name, cnt); if (nw) head.append(nw); head.append(when, clr, chev);
       head.addEventListener('click', () => { open ? collapsed.add(k) : collapsed.delete(k); lsSet('da_collapsed', JSON.stringify([...collapsed])); scheduleRender(); });
       tray.append(head);
@@ -397,7 +499,7 @@
         const limit = 6, all = showAll.has(k), shown = all ? arr : arr.slice(0, limit);
         body.append(itemsList(shown));
         if (arr.length > limit) {
-          const more = document.createElement('button'); more.className = 'tool mt-2'; more.textContent = all ? 'Show less' : `Show all ${arr.length}`;
+          const more = document.createElement('button'); more.className = 'moreBtn'; more.textContent = all ? 'Show less' : `Show all ${arr.length}`;
           more.addEventListener('click', () => { all ? showAll.delete(k) : showAll.add(k); scheduleRender(); });
           body.append(more);
         }
@@ -408,77 +510,71 @@
     out.append(trays);
   }
 
+  function setTool(btn, iconKey, label, pressed) { btn.innerHTML = iconKey ? ico(iconKey) : btn.innerHTML; btn.title = label; btn.setAttribute('aria-label', label); if (pressed !== undefined) { btn.setAttribute('aria-pressed', pressed); btn.classList.toggle('on', !!pressed); } }
+
   function render() {
     const all = [...items.values()].sort(byTime);
     const calls = all.filter((x) => isCallLike(x.n)), notes = all.filter((x) => !isCallLike(x.n));
     const ringing = activeCalls();
     const app = $('app'); app.dataset.view = ui.view; app.dataset.size = ui.size;
-
-    // keep focus + caret in a reply box across re-renders
     const ae = document.activeElement, focusId = ae && ae.dataset ? ae.dataset.replyId : null, caret = focusId ? ae.selectionStart : 0;
 
     renderDock(ringing);
     const co = $('callsOut'); co.innerHTML = ''; co.append(calls.length ? itemsList(calls) : emptyMsg('No calls yet. Incoming and missed calls show here.'));
     renderNotes(notes);
 
-    $('paneCalls').classList.toggle('hidden', ui.tab !== 'calls'); $('paneNotes').classList.toggle('hidden', ui.tab !== 'notes');
     const tcalls = ui.tab === 'calls';
-    $('tabCalls').className = 'flex-1 rounded-xl px-3 py-2 text-sm font-semibold border ' + (tcalls ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-900 border-slate-800');
-    $('tabNotes').className = 'flex-1 rounded-xl px-3 py-2 text-sm font-semibold border ' + (!tcalls ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-900 border-slate-800');
+    $('paneCalls').classList.toggle('hidden', !tcalls); $('paneNotes').classList.toggle('hidden', tcalls);
+    $('tabCalls').className = 'flex-1 rounded-2xl px-3 py-2 text-sm font-semibold border flex items-center justify-center gap-2 ' + (tcalls ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-900 border-slate-800');
+    $('tabNotes').className = 'flex-1 rounded-2xl px-3 py-2 text-sm font-semibold border flex items-center justify-center gap-2 ' + (!tcalls ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-900 border-slate-800');
     const newCalls = calls.filter((x) => x.isNew).length, newNotes = notes.filter((x) => x.isNew).length;
-    $('cntCalls').textContent = newCalls ? newCalls + ' new' : calls.length; $('cntCalls').className = 'pill ml-1' + (newCalls ? ' new' : '');
-    $('cntNotes').textContent = newNotes ? newNotes + ' new' : notes.length; $('cntNotes').className = 'pill ml-1' + (newNotes ? ' new' : '');
-    document.querySelectorAll('#segView button').forEach((b) => b.classList.toggle('on', b.dataset.v === ui.view));
-    document.querySelectorAll('#segSize button').forEach((b) => b.classList.toggle('on', b.dataset.v === ui.size));
-    document.querySelectorAll('#segGroup button').forEach((b) => b.classList.toggle('on', b.dataset.v === ui.group));
-    $('segGroup').style.display = ui.tab === 'notes' ? '' : 'none';
-    $('soundBtn').textContent = ui.sound ? '🔊 Sound on' : '🔇 Sound off'; $('soundBtn').classList.toggle('on', ui.sound);
-    const perm = 'Notification' in window ? Notification.permission : 'denied';
-    $('deskBtn').textContent = ui.desktop && perm === 'granted' ? '🖥 Desktop alerts on' : '🖥 Desktop alerts'; $('deskBtn').classList.toggle('on', ui.desktop && perm === 'granted');
+    $('cntCalls').textContent = newCalls ? newCalls + ' new' : calls.length; $('cntCalls').className = 'pill' + (newCalls ? ' new' : '');
+    $('cntNotes').textContent = newNotes ? newNotes + ' new' : notes.length; $('cntNotes').className = 'pill' + (newNotes ? ' new' : '');
+
+    // icon toggle buttons
+    setTool($('bView'), ui.view === 'grid' ? 'grid' : 'list', ui.view === 'grid' ? 'Grid layout (tap for list)' : 'List layout (tap for grid)', ui.view === 'grid');
+    $('bSize').textContent = ui.size; setTool($('bSize'), null, `Size ${ui.size} (tap to change)`, ui.size !== 'L'); $('bSize').innerHTML = ui.size;
+    setTool($('bGroup'), 'layers', ui.group === 'tray' ? 'Grouped in trays (tap for timeline)' : 'Timeline (tap to group by app)', ui.group === 'tray'); $('bGroup').style.display = tcalls ? 'none' : '';
+    setTool($('bSound'), ui.sound ? 'vol' : 'volOff', ui.sound ? 'Sound on (tap to mute)' : 'Sound off (tap to turn on)', ui.sound);
+    setTool($('bTest'), 'play', 'Play test sounds');
+    const perm = 'Notification' in window ? Notification.permission : 'denied', deskOn = ui.desktop && perm === 'granted';
+    setTool($('bDesk'), deskOn ? 'bell' : 'bellOff', deskOn ? 'Desktop popups on (tap to turn off)' : 'Desktop popups off (tap to turn on)', deskOn);
+    setTool($('bRead'), 'doneAll', 'Mark all as read'); setTool($('bClear'), 'trash', 'Delete all alerts');
 
     updateTitle([...items.values()].filter((x) => x.isNew).length);
     syncRinging(); syncHint();
-
     if (focusId) { const el = document.querySelector(`[data-reply-id="${CSS.escape(focusId)}"]`); if (el) { el.focus(); try { el.setSelectionRange(caret, caret); } catch {} } }
   }
-  let rq = false;
-  function scheduleRender() { if (rq) return; rq = true; requestAnimationFrame(() => { rq = false; render(); }); }
+  // Never rebuild the DOM while a finger/mouse is pressed: a re-render between press and release swallows the click and breaks swipes.
+  let rq = false, pointerDown = false, pendingRender = false, pdTimer = null;
+  const pdUp = () => { if (!pointerDown) return; pointerDown = false; clearTimeout(pdTimer); if (pendingRender) { pendingRender = false; setTimeout(scheduleRender, 60); } };
+  window.addEventListener('pointerdown', () => { pointerDown = true; clearTimeout(pdTimer); pdTimer = setTimeout(pdUp, 8000); }, true);
+  window.addEventListener('pointerup', pdUp, true); window.addEventListener('pointercancel', pdUp, true);
+  function scheduleRender() { if (pointerDown) { pendingRender = true; return; } if (rq) return; rq = true; requestAnimationFrame(() => { rq = false; render(); }); }
 
   // ======================= data changes =======================
   function add(n, isNew) {
-    if (items.has(n.id)) return;
+    if (items.has(n.id) || pendingDelete.has(n.id)) return;
     items.set(n.id, { n, isNew: !!isNew, addedAt: Date.now() });
     if (isNew) { fresh.add(n.id); onIncoming(n); }
     scheduleRender();
   }
-  function removeCard(id) { if (!items.delete(id)) return; acked.delete(id); drafts.delete(id); expanded.delete(id); scheduleRender(); }
-  function resetAll() { items.clear(); acked.clear(); drafts.clear(); expanded.clear(); fresh.clear(); scheduleRender(); }
-  function onIncoming(n) {
-    if (isRinging(n)) { syncRingSoon(); } else chimeMessage();
-    desktopNotify(n);
-  }
-  function syncRingSoon() { setTimeout(syncRinging, 0); }
-  function markRead() { items.forEach((it) => { it.isNew = false; }); scheduleRender(); }
+  function removeCard(id) { if (!items.delete(id)) return; acked.delete(id); drafts.delete(id); flipped.delete(id); replying.delete(id); scheduleRender(); }
+  function resetAll() { items.clear(); acked.clear(); drafts.clear(); flipped.clear(); replying.clear(); fresh.clear(); scheduleRender(); }
+  function onIncoming(n) { if (isRinging(n)) setTimeout(syncRinging, 0); else chimeMessage(); popupFor(n); }
+  function markRead() { let changed = false; items.forEach((it) => { if (it.isNew) { it.isNew = false; changed = true; } }); if (changed) scheduleRender(); }
 
   // ======================= realtime + polling =======================
   function setStatus(txt, cls) { const s = $('status'); s.textContent = txt; s.className = 'text-xs px-2 py-1 rounded-full ' + cls; }
-  // Ticker in a Web Worker: browsers throttle timers in background tabs, workers are not throttled
   let tickWorker = null, lastPoll = 0, retryTimer = null, retryDelay = 3000, loading = false;
   function stopTicker() { if (tickWorker) { tickWorker.terminate(); tickWorker = null; } clearInterval(pollTimer); }
   function startTicker() {
     stopTicker();
-    try {
-      const url = URL.createObjectURL(new Blob(['setInterval(function(){postMessage(1)},1000)'], { type: 'text/javascript' }));
-      tickWorker = new Worker(url); tickWorker.onmessage = tick;
-    } catch { pollTimer = setInterval(tick, 1000); }
+    try { const url = URL.createObjectURL(new Blob(['setInterval(function(){postMessage(1)},1000)'], { type: 'text/javascript' })); tickWorker = new Worker(url); tickWorker.onmessage = tick; }
+    catch { pollTimer = setInterval(tick, 1000); }
   }
   function tick() { if (password && Date.now() - lastPoll >= (live ? 8000 : 2500)) loadHistory(); }
-  function scheduleRetry() {
-    if (!password) return;
-    clearTimeout(retryTimer);
-    retryTimer = setTimeout(() => { if (password && !live) subscribe(); }, retryDelay);
-    retryDelay = Math.min(retryDelay * 2, 30000);
-  }
+  function scheduleRetry() { if (!password) return; clearTimeout(retryTimer); retryTimer = setTimeout(() => { if (password && !live) subscribe(); }, retryDelay); retryDelay = Math.min(retryDelay * 2, 30000); }
   function subscribe() {
     if (channel) { try { sb.removeChannel(channel); } catch {} channel = null; }
     const mine = channel = sb.channel('desk-alert-' + Date.now())
@@ -490,8 +586,7 @@
         if (live) { retryDelay = 3000; clearTimeout(retryTimer); setStatus('● Live', 'bg-emerald-900 text-emerald-300'); loadHistory(); }
         else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED') {
           if (err) console.error('Realtime', st, err);
-          setStatus('Reconnecting… (checking every few seconds)', 'bg-amber-900 text-amber-300');
-          scheduleRetry();
+          setStatus('Reconnecting… (checking every few seconds)', 'bg-amber-900 text-amber-300'); scheduleRetry();
         }
       });
   }
@@ -507,12 +602,12 @@
     loading = false;
     if (r.status === 401) return logout();
     const list = r.data.items || [];
-    if (loadedOnce && list.length < 100) {      // drop cards deleted elsewhere (e.g. a call that stopped ringing); ignore ones added moments ago
+    if (loadedOnce && list.length < 100) {
       const ids = new Set(list.map((x) => x.id)), now = Date.now();
       [...items.entries()].forEach(([id, it]) => { if (!ids.has(id) && now - it.addedAt > (isRinging(it.n) ? 5000 : 20000)) removeCard(id); });
     }
     const announce = loadedOnce; loadedOnce = true;
-    list.slice().reverse().forEach((n) => add(n, announce));   // oldest first so the newest ends on top
+    list.slice().reverse().forEach((n) => add(n, announce));
   }
 
   // ======================= session =======================
@@ -523,47 +618,45 @@
     if (ringTimer) { clearInterval(ringTimer); ringTimer = null; }
     $('app').classList.add('hidden'); $('login').classList.remove('hidden'); $('soundHint').classList.add('hidden');
   }
-
   $('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault(); unlock();                           // the click is the user gesture that lets sound play
+    e.preventDefault(); unlock();
     const btn = $('loginBtn'), err = $('loginError'), pw = $('pw').value;
     btn.disabled = true; btn.textContent = 'Checking…'; err.classList.add('hidden');
     try {
       const r = await api('/api/verify', 'POST', pw);
       if (!r.ok) throw new Error(r.status === 401 ? 'Incorrect password.' : 'Server error. Try again.');
       password = pw; sessionStorage.setItem('da_pw', pw); $('pw').value = ''; showApp();
-    } catch (ex) {
-      err.textContent = ex.message === 'Failed to fetch' ? 'Cannot reach backend. Check BACKEND_URL.' : ex.message; err.classList.remove('hidden');
-    } finally { btn.disabled = false; btn.textContent = 'Unlock'; }
+    } catch (ex) { err.textContent = ex.message === 'Failed to fetch' ? 'Cannot reach backend. Check BACKEND_URL.' : ex.message; err.classList.remove('hidden'); }
+    finally { btn.disabled = false; btn.textContent = 'Unlock'; }
   });
 
-  // ======================= controls =======================
-  const bindSeg = (id, key, lsKey) => document.querySelectorAll(`#${id} button`).forEach((b) => b.addEventListener('click', () => { ui[key] = b.dataset.v; lsSet(lsKey, ui[key]); scheduleRender(); }));
-  bindSeg('segView', 'view', 'da_view'); bindSeg('segSize', 'size', 'da_size'); bindSeg('segGroup', 'group', 'da_group');
+  // ======================= toolbar =======================
+  $('bView').addEventListener('click', () => { ui.view = ui.view === 'grid' ? 'list' : 'grid'; lsSet('da_view', ui.view); scheduleRender(); });
+  $('bSize').addEventListener('click', () => { ui.size = ui.size === 'L' ? 'M' : ui.size === 'M' ? 'S' : 'L'; lsSet('da_size', ui.size); flipped.clear(); scheduleRender(); });
+  $('bGroup').addEventListener('click', () => { ui.group = ui.group === 'tray' ? 'timeline' : 'tray'; lsSet('da_group', ui.group); scheduleRender(); });
   $('tabCalls').addEventListener('click', () => { ui.tab = 'calls'; lsSet('da_tab', 'calls'); scheduleRender(); });
   $('tabNotes').addEventListener('click', () => { ui.tab = 'notes'; lsSet('da_tab', 'notes'); scheduleRender(); });
-  $('soundBtn').addEventListener('click', () => { ui.sound = !ui.sound; lsSet('da_sound', ui.sound ? '1' : '0'); unlock(); if (!ui.sound && ringTimer) { clearInterval(ringTimer); ringTimer = null; } scheduleRender(); });
-  $('testBtn').addEventListener('click', () => { unlock(); const s = ui.sound; ui.sound = true; setTimeout(() => { chimeMessage(); setTimeout(() => { chimeCall(); ui.sound = s; }, 1300); }, 80); });
-  $('deskBtn').addEventListener('click', async () => {
-    if (!('Notification' in window)) return alert('This browser does not support desktop notifications.');
-    if (ui.desktop && Notification.permission === 'granted') { ui.desktop = false; lsSet('da_desktop', '0'); return scheduleRender(); }
+  $('bSound').addEventListener('click', () => { ui.sound = !ui.sound; lsSet('da_sound', ui.sound ? '1' : '0'); unlock(); if (!ui.sound && ringTimer) { clearInterval(ringTimer); ringTimer = null; } toast(ui.sound ? 'Sound on' : 'Sound off'); scheduleRender(); });
+  $('bTest').addEventListener('click', () => { unlock(); const s = ui.sound; ui.sound = true; setTimeout(() => { chimeMessage(); setTimeout(() => { chimeCall(); ui.sound = s; }, 1300); }, 80); toast('Playing message chime, then call ring'); });
+  $('bDesk').addEventListener('click', async () => {
+    if (!('Notification' in window)) return toast('This browser does not support popups');
+    if (ui.desktop && Notification.permission === 'granted') { ui.desktop = false; lsSet('da_desktop', '0'); toast('Desktop popups off'); return scheduleRender(); }
     const p = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
-    ui.desktop = p === 'granted'; lsSet('da_desktop', ui.desktop ? '1' : '0');
-    if (p === 'denied') alert('Notifications are blocked for this site. Allow them in your browser settings.');
-    scheduleRender();
+    ui.desktop = p === 'granted'; lsSet('da_desktop', ui.desktop ? '1' : '0'); scheduleRender();
+    if (p === 'denied') return toast('Popups are blocked for this site. Allow them in the browser address-bar settings.');
+    if (ui.desktop) { await initSW(); popup('Desk Alert', { body: 'Desktop popups are on', tag: 'da-test', silent: true }); toast('Desktop popups on'); }
   });
-  $('readBtn').addEventListener('click', () => { markRead(); api('/api/read', 'POST', password).catch(() => {}); });
-  $('clearBtn').addEventListener('click', async () => { if (!confirm('Delete all alert history?')) return; const r = await api('/api/clear', 'DELETE', password); if (r.ok) resetAll(); else alert('Could not clear history.'); });
+  $('bRead').addEventListener('click', () => { markRead(); api('/api/read', 'POST', password).catch(() => {}); toast('All marked as read'); });
+  $('bClear').addEventListener('click', async () => { if (!confirm('Delete all alert history?')) return; const r = await api('/api/clear', 'DELETE', password); if (r.ok) resetAll(); else toast('Could not clear history'); });
   $('lockBtn').addEventListener('click', logout);
 
-  // first interaction anywhere unlocks audio (browsers block sound until then)
   ['pointerdown', 'keydown'].forEach((ev) => window.addEventListener(ev, () => { if (ui.sound) unlock(); }, { passive: true }));
   function resync() { if (!password) return; loadHistory(); if (sb && !live) { retryDelay = 3000; subscribe(); } }
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { resync(); if (document.hasFocus()) markRead(); } });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { resync(); if (document.hasFocus()) { markRead(); } } });
   window.addEventListener('focus', markRead);
   window.addEventListener('online', resync);
 
-  updateTitle(0);
+  updateTitle(0); initSW();
   if (password) api('/api/verify', 'POST', password).then((r) => (r.ok ? showApp() : logout())).catch(() => {});
 })();
 </script>
