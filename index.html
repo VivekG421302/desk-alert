@@ -185,7 +185,7 @@
   const lum = (hex) => { const r = parseInt(hex.slice(0, 2), 16), g = parseInt(hex.slice(2, 4), 16), b = parseInt(hex.slice(4, 6), 16); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; };
   const NS = 'xmlns="http://www.w3.org/2000/svg"';
   const circle = (bg, inner, label) => `<svg ${NS} viewBox="0 0 32 32" role="img" aria-label="${esc(label)}"><circle cx="16" cy="16" r="16" fill="#${bg}"/>${inner}</svg>`;
-  const glyph = (path, fg) => `<g transform="translate(5.6 5.6) scale(.65)"><path d="${path}" fill="${fg}"/></g>`;
+  const glyph = (path, fg) => `<g transform="translate(7.84 7.84) scale(.68)"><path d="${path}" fill="${fg}"/></g>`;
   const iconCache = new Map();
   function hashHue(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 360; }
   function hsl2hex(h, s, l) { s /= 100; l /= 100; const k = (n) => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return [f(0), f(8), f(4)].map((x) => Math.round(x * 255).toString(16).padStart(2, '0')).join(''); }
