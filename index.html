@@ -364,7 +364,8 @@
       if (s && s.data.status === 'sent') return fin('Sent ✓', true);
       if (s && s.data.status === 'failed') return fin('Failed: ' + (s.data.error || 'unknown'), false);
     }
-    fin('Phone did not respond (is the app running?)', false);
+    api('/api/reply?id=' + encodeURIComponent(r.data.id), 'DELETE', password).catch(() => {});   // cancel so it is never sent late
+    fin('Phone did not respond, reply cancelled. Open the Desk Alert app on the phone and try again.', false);
   }
   function editQuick() {
     const v = prompt('Quick replies (separate with commas):', quick.join(', ')); if (v === null) return;
