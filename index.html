@@ -154,6 +154,16 @@
     </div>
     <div id="soundHint" class="hidden fixed left-1/2 -translate-x-1/2 bottom-5 z-50 rounded-full border border-amber-700 bg-amber-950/95 text-amber-200 text-sm px-4 py-2 shadow-lg pointer-events-none">Tap anywhere once to enable sound</div>
 
+    <div id="setupBanner" class="hidden mb-3 rounded-2xl border border-amber-700 bg-amber-950/70 text-amber-100 p-3 text-sm">
+      <div class="font-semibold">Replies need a one-time database update</div>
+      <div class="mt-1 opacity-90">Your database is missing the reply tables, so no message can show a Reply option. Copy the SQL, open the SQL editor, paste it and press Run. It is safe to run twice.</div>
+      <div class="mt-2 flex flex-wrap gap-2">
+        <button id="sqlCopy" class="rounded-xl bg-amber-500 text-black font-semibold px-3 py-1.5">1. Copy SQL</button>
+        <a id="sqlOpen" target="_blank" rel="noopener" class="rounded-xl bg-amber-900 border border-amber-600 px-3 py-1.5 font-semibold">2. Open SQL editor</a>
+        <button id="sqlCheck" class="rounded-xl bg-amber-900 border border-amber-600 px-3 py-1.5 font-semibold">3. Check again</button>
+      </div>
+    </div>
+
     <section id="paneCalls" class="hidden"><div id="callsOut"></div></section>
     <section id="paneNotes"><div id="notesOut"></div></section>
   </main>
@@ -610,8 +620,44 @@
     list.slice().reverse().forEach((n) => add(n, announce));
   }
 
+  // ======================= setup check (reply database update) =======================
+  const REPLY_SQL = `-- Run after 002. Idempotent.
+-- Dedupe key + reply support on notifications
+alter table public.notifications add column if not exists dedupe_key text;
+alter table public.notifications add column if not exists reply_key  text;     -- random token made by the phone app (not the WhatsApp key)
+alter table public.notifications add column if not exists can_reply  boolean not null default false;
+create unique index if not exists notifications_dedupe_key_idx on public.notifications (dedupe_key);
+
+-- Reply queue: dashboard writes 'pending', phone app picks up and marks sent/failed
+create table if not exists public.replies (
+  id              uuid primary key default gen_random_uuid(),
+  created_at      timestamptz not null default timezone('utc', now()),
+  notification_id uuid references public.notifications(id) on delete cascade,
+  reply_key       text not null,
+  text            text not null,
+  status          text not null default 'pending' check (status in ('pending','sent','failed')),
+  error           text
+);
+create index if not exists replies_status_idx on public.replies (status);
+alter table public.replies enable row level security;   -- backend-only, no anon policy
+`;
+  async function checkSetup() {
+    try {
+      const res = await fetch(cfg.BACKEND_URL + '/api/health', { cache: 'no-store' }); const d = await res.json();
+      const missing = !!(d && d.schema && d.schema.replies_ready === false);
+      $('setupBanner').classList.toggle('hidden', !missing);
+      return !missing;
+    } catch { return true; }
+  }
+  try { $('sqlOpen').href = 'https://supabase.com/dashboard/project/' + new URL(cfg.SUPABASE_URL).hostname.split('.')[0] + '/sql/new'; } catch {}
+  $('sqlCopy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(REPLY_SQL); toast('SQL copied. Now open the SQL editor, paste and Run.'); }
+    catch { prompt('Copy this SQL:', REPLY_SQL); }
+  });
+  $('sqlCheck').addEventListener('click', async () => { const ok = await checkSetup(); toast(ok ? 'All set. Replies are ready.' : 'Still missing. Run the SQL first.'); });
+
   // ======================= session =======================
-  function showApp() { $('login').classList.add('hidden'); $('app').classList.remove('hidden'); render(); connect(); }
+  function showApp() { $('login').classList.add('hidden'); $('app').classList.remove('hidden'); render(); connect(); checkSetup(); }
   function logout() {
     sessionStorage.removeItem('da_pw'); password = ''; stopTicker(); clearTimeout(retryTimer); retryDelay = 3000; live = false; loadedOnce = false;
     if (channel && sb) sb.removeChannel(channel); channel = null; resetAll();
