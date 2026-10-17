@@ -590,6 +590,7 @@
     if (channel) { try { sb.removeChannel(channel); } catch {} channel = null; }
     const mine = channel = sb.channel('desk-alert-' + Date.now())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (p) => add(p.new, true))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications' }, (p) => { const it = p.new && items.get(p.new.id); if (it) { Object.assign(it.n, p.new); scheduleRender(); } })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'notifications' }, (p) => { if (p.old && p.old.id) removeCard(p.old.id); else loadHistory(); })
       .subscribe((st, err) => {
         if (mine !== channel) return;
@@ -617,6 +618,9 @@
       const ids = new Set(list.map((x) => x.id)), now = Date.now();
       [...items.entries()].forEach(([id, it]) => { if (!ids.has(id) && now - it.addedAt > (isRinging(it.n) ? 5000 : 20000)) removeCard(id); });
     }
+    let changed = false;
+    list.forEach((n) => { const it = items.get(n.id); if (it && it.n.can_reply !== n.can_reply) { it.n.can_reply = n.can_reply; changed = true; } });
+    if (changed) scheduleRender();
     const announce = loadedOnce; loadedOnce = true;
     list.slice().reverse().forEach((n) => add(n, announce));
   }
